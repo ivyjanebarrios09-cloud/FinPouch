@@ -14,9 +14,9 @@ import {
 import type { WalletActivity } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, ShoppingCart } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ActivityByHourChart } from "./charts";
+import { ActivityByHourChart, ActivityByDayChart } from "./charts";
 import { AiAdvice } from "./ai-advice";
 
 function StatCard({ title, value, icon: Icon, isLoading }: { title: string; value: string | number; icon: React.ElementType; isLoading: boolean; }) {
@@ -93,18 +93,34 @@ export function DashboardClient() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Total Wallet Opens" value={totalOpens} icon={ShoppingCart} isLoading={loading} />
       </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
+         <Card>
+          <CardHeader>
+            <CardTitle>Daily Wallet Opens (Last 7 Days)</CardTitle>
+            <CardDescription>
+              A look at your wallet opening frequency over the past week.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pl-2">
+            <ActivityByDayChart activities={activities} isLoading={loading}/>
+          </CardContent>
+        </Card>
+      </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">
           <CardHeader>
             <CardTitle>Wallet Opens by Hour</CardTitle>
+             <CardDescription>
+              An hourly breakdown of your wallet opening habits.
+            </CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
             <ActivityByHourChart activities={activities} isLoading={loading}/>
           </CardContent>
         </Card>
-        <Card className="col-span-4 md:col-span-3">
+        <div className="col-span-4 md:col-span-3">
              <AiAdvice walletOpens={totalOpens} />
-        </Card>
+        </div>
       </div>
     </>
   );

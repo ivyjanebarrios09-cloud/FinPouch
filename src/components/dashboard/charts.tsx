@@ -4,13 +4,14 @@ import { useMemo } from "react"
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
 import type { WalletActivity } from "@/lib/types"
 import { Skeleton } from "@/components/ui/skeleton"
+import { format, subDays, startOfDay } from 'date-fns'
 
-interface ActivityByHourChartProps {
+interface ActivityChartProps {
   activities: WalletActivity[];
   isLoading: boolean;
 }
 
-export function ActivityByHourChart({ activities, isLoading }: ActivityByHourChartProps) {
+export function ActivityByHourChart({ activities, isLoading }: ActivityChartProps) {
     const data = useMemo(() => {
         const hourCounts = Array.from({ length: 24 }, (_, i) => ({
             name: i.toString(),
@@ -69,4 +70,73 @@ export function ActivityByHourChart({ activities, isLoading }: ActivityByHourCha
             </ResponsiveContainer>
         </div>
     )
+}
+
+
+export function ActivityByDayChart({ activities, isLoading }: ActivityChartProps) {
+  const data = useMemo(() => {
+    const last7Days = Array.from({ length: 7 }).map((_, i) => {
+      const date = subDays(new Date(), i);
+      return {
+        name: format(date, "EEE"),
+        date: format(date, "MMM d"),
+        opens: 0,
+      };
+    }).reverse();
+
+    const dayNameMap = last7Days.reduce((acc, day) => {
+        acc[day.date] = day;
+        return acc;
+    }, {} as Record<string, typeof last7Days[0]>);
+
+    activities.forEach(activity => {
+      if (activity.timestamp) {
+        const activityDateStr = format(startOfDay(activity.timestamp.toDate()), "MMM d");
+        if (dayNameMap[activityDateStr]) {
+            dayNameMap[activityDateStr].opens++;
+        }
+      }
+    });
+
+    return Object.values(dayNameMap);
+  }, [activities]);
+
+  if (isLoading) {
+    return <Skeleton className="h-[350px] w-full" />;
+  }
+
+  return (
+    <div className="h-[350px]">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground) / 0.5)" />
+            <XAxis
+                dataKey="name"
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+            />
+            <YAxis
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                allowDecimals={false}
+            />
+            <Tooltip
+                cursor={{ fill: 'hsl(var(--secondary))' }}
+                contentStyle={{
+                    background: "hsl(var(--background))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "var(--radius)",
+                }}
+                 formatter={(value, name, props) => [`${value} opens`, `Date: ${props.payload.date}`]}
+                 labelFormatter={() => ''}
+            />
+            <Line type="monotone" dataKey="opens" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-2))" }} activeDot={{ r: 6 }} />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
 }
