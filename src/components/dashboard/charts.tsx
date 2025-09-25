@@ -73,7 +73,7 @@ interface ActivityByHourChartProps {
 export function ActivityByHourChart({ activities, isLoading }: ActivityByHourChartProps) {
     const data = useMemo(() => {
         const hourCounts = Array.from({ length: 24 }, (_, i) => ({
-            name: i.toString().padStart(2, '0'),
+            name: i.toString(),
             opens: 0,
         }));
 
@@ -100,7 +100,13 @@ export function ActivityByHourChart({ activities, isLoading }: ActivityByHourCha
                         fontSize={12}
                         tickLine={false}
                         axisLine={false}
-                        tickFormatter={(value) => `${value}:00`}
+                        tickFormatter={(value) => {
+                            const hour = parseInt(value, 10);
+                            if (hour === 0) return "12 AM";
+                            if (hour === 12) return "12 PM";
+                            if (hour < 12) return `${hour} AM`;
+                            return `${hour - 12} PM`;
+                        }}
                     />
                     <YAxis
                         stroke="hsl(var(--muted-foreground))"
