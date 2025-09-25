@@ -82,8 +82,10 @@ export function ActivityByDayChart({ activities, isLoading }: ActivityByDayChart
             { name: "Sat", opens: 0 },
         ];
         activities.forEach(activity => {
-            const dayIndex = activity.timestamp.toDate().getDay();
-            dayCounts[dayIndex].opens++;
+            if (activity.timestamp) {
+              const dayIndex = activity.timestamp.toDate().getDay();
+              dayCounts[dayIndex].opens++;
+            }
         });
         return dayCounts;
     }, [activities]);
