@@ -15,10 +15,6 @@ const GenerateSpendingAdviceInputSchema = z.object({
   walletOpens: z
     .number()
     .describe('The number of times the user opened their wallet.'),
-  spentCount: z.number().describe('The number of times the user spent money.'),
-  notSpentCount: z
-    .number()
-    .describe('The number of times the user did not spend money.'),
 });
 export type GenerateSpendingAdviceInput = z.infer<
   typeof GenerateSpendingAdviceInputSchema
@@ -44,8 +40,6 @@ const prompt = ai.definePrompt({
   prompt: `Based on your recent wallet activity, here is some personalized spending advice:
 
 You opened your wallet {{walletOpens}} times.
-You spent money {{spentCount}} times.
-You did not spend money {{notSpentCount}} times.
 
 Here's a tip to build spending awareness:
 `,

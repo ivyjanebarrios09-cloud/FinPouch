@@ -10,24 +10,13 @@ import {
   orderBy,
   addDoc,
   serverTimestamp,
-  doc,
-  updateDoc,
-  Timestamp,
 } from "firebase/firestore";
 import type { WalletActivity } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, ShoppingCart, Frown, Smile } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { PlusCircle, ShoppingCart } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ActivityByHourChart, SpentNotSpentChart } from "./charts";
+import { ActivityByHourChart } from "./charts";
 import { AiAdvice } from "./ai-advice";
 
 function StatCard({ title, value, icon: Icon, isLoading }: { title: string; value: string | number; icon: React.ElementType; isLoading: boolean; }) {
@@ -52,9 +41,6 @@ export function DashboardClient() {
   const { user } = useAuth();
   const [activities, setActivities] = useState<WalletActivity[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentActivityId, setCurrentActivityId] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -77,48 +63,22 @@ export function DashboardClient() {
     return () => unsubscribe();
   }, [user]);
 
-  const stats = useMemo(() => {
-    const totalOpens = activities.length;
-    const spentCount = activities.filter((a) => a.didSpend === true).length;
-    const notSpentCount = activities.filter((a) => a.didSpend === false).length;
-    return { totalOpens, spentCount, notSpentCount };
-  }, [activities]);
+  const totalOpens = activities.length;
 
   const handleOpenWallet = async () => {
     if (!user) return;
     try {
-      const docRef = await addDoc(
+      await addDoc(
         collection(db, "users", user.uid, "walletActivity"),
         {
           timestamp: serverTimestamp(),
-          didSpend: null,
           userId: user.uid,
         }
       );
-      setCurrentActivityId(docRef.id);
-      setIsDialogOpen(true);
     } catch (error) {
       console.error("Error adding document: ", error);
     }
   };
-
-  const handleTagActivity = async (didSpend: boolean) => {
-    if (!user || !currentActivityId) return;
-    setIsSubmitting(true);
-    try {
-      const activityDocRef = doc(db, "users", user.uid, "walletActivity", currentActivityId);
-      await updateDoc(activityDocRef, {
-        didSpend,
-      });
-    } catch (error) {
-      console.error("Error updating document: ", error);
-    } finally {
-      setIsSubmitting(false);
-      setIsDialogOpen(false);
-      setCurrentActivityId(null);
-    }
-  };
-
 
   return (
     <>
@@ -131,9 +91,7 @@ export function DashboardClient() {
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Wallet Opens" value={stats.totalOpens} icon={ShoppingCart} isLoading={loading} />
-        <StatCard title="Times Spent" value={stats.spentCount} icon={Smile} isLoading={loading} />
-        <StatCard title="Times Not Spent" value={stats.notSpentCount} icon={Frown} isLoading={loading} />
+        <StatCard title="Total Wallet Opens" value={totalOpens} icon={ShoppingCart} isLoading={loading} />
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">
@@ -145,34 +103,9 @@ export function DashboardClient() {
           </CardContent>
         </Card>
         <Card className="col-span-4 md:col-span-3">
-          <CardHeader>
-            <CardTitle>Spent vs. Not Spent</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <SpentNotSpentChart stats={stats} isLoading={loading} />
-          </CardContent>
+             <AiAdvice walletOpens={totalOpens} />
         </Card>
       </div>
-      <AiAdvice walletOpens={stats.totalOpens} spentCount={stats.spentCount} notSpentCount={stats.notSpentCount} />
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>What happened?</DialogTitle>
-            <DialogDescription>
-              You've opened your wallet. Did you make a purchase?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => handleTagActivity(false)} disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Didn't Spend"}
-            </Button>
-            <Button onClick={() => handleTagActivity(true)} disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "I Spent"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

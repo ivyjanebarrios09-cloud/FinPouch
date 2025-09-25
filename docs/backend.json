@@ -28,10 +28,6 @@
           "format": "date-time",
           "description": "The time the wallet was opened."
         },
-        "didSpend": {
-          "type": "boolean",
-          "description": "Whether or not the user spent money."
-        },
         "userId": {
           "type": "string",
           "description": "The ID of the user who performed the activity."

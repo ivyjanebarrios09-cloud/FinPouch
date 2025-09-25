@@ -8,11 +8,9 @@ import { Skeleton } from "../ui/skeleton";
 
 interface AiAdviceProps {
   walletOpens: number;
-  spentCount: number;
-  notSpentCount: number;
 }
 
-export function AiAdvice({ walletOpens, spentCount, notSpentCount }: AiAdviceProps) {
+export function AiAdvice({ walletOpens }: AiAdviceProps) {
   const [advice, setAdvice] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -26,8 +24,6 @@ export function AiAdvice({ walletOpens, spentCount, notSpentCount }: AiAdvicePro
       try {
         const result = await generateSpendingAdvice({
           walletOpens,
-          spentCount,
-          notSpentCount,
         });
         setAdvice(result.advice);
       } catch (error) {
@@ -39,7 +35,7 @@ export function AiAdvice({ walletOpens, spentCount, notSpentCount }: AiAdvicePro
     }
 
     getAdvice();
-  }, [walletOpens, spentCount, notSpentCount]);
+  }, [walletOpens]);
 
   return (
     <Card>
