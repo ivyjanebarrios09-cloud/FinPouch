@@ -1,0 +1,58 @@
+
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "A user of the application.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The user's unique ID."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        }
+      },
+      "required": ["uid", "email"]
+    },
+    "walletActivity": {
+      "title": "Wallet Activity",
+      "description": "A record of a wallet opening event.",
+      "type": "object",
+      "properties": {
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time the wallet was opened."
+        },
+        "didSpend": {
+          "type": "boolean",
+          "description": "Whether or not the user spent money."
+        },
+        "note": {
+          "type": "string",
+          "description": "A note about the activity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who performed the activity."
+        }
+      },
+      "required": ["timestamp", "userId"]
+    }
+  },
+  "auth": {
+    "providers": ["email"]
+  },
+  "firestore": {
+    "/users/{userId}/walletActivity/{activityId}": {
+      "schema": {
+        "$ref": "#/entities/walletActivity"
+      },
+      "description": "Stores wallet activity for each user."
+    }
+  }
+}
