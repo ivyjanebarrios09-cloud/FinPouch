@@ -158,7 +158,7 @@ export function DashboardClient() {
           </CardContent>
         </Card>
       </div>
-      <AiAdvice {...stats} />
+      <AiAdvice walletOpens={stats.totalOpens} spentCount={stats.spentCount} notSpentCount={stats.notSpentCount} />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
