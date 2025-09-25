@@ -54,7 +54,6 @@ export default function SignupPage() {
       await createUserWithEmailAndPassword(auth, values.email, values.password);
       router.push("/dashboard");
     } catch (error: any) {
-      console.error("Signup error:", error);
       let errorMessage = "An unexpected error occurred. Please try again.";
       if (error.code === "auth/email-already-in-use") {
         errorMessage = "This email is already in use. Please log in instead.";
