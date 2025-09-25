@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, ShoppingCart } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ActivityByHourChart, ActivityByDayChart } from "./charts";
+import { ActivityByHourChart, ActivityByDayChart, ActivityByMonthChart } from "./charts";
 import { AiAdvice } from "./ai-advice";
 
 function StatCard({ title, value, icon: Icon, isLoading }: { title: string; value: string | number; icon: React.ElementType; isLoading: boolean; }) {
@@ -103,6 +103,19 @@ export function DashboardClient() {
           </CardHeader>
           <CardContent className="pl-2">
             <ActivityByDayChart activities={activities} isLoading={loading}/>
+          </CardContent>
+        </Card>
+      </div>
+       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
+         <Card>
+          <CardHeader>
+            <CardTitle>Monthly Wallet Opens (Last 12 Months)</CardTitle>
+            <CardDescription>
+              A look at your wallet opening frequency over the past year.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pl-2">
+            <ActivityByMonthChart activities={activities} isLoading={loading}/>
           </CardContent>
         </Card>
       </div>

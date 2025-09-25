@@ -4,7 +4,7 @@ import { useMemo } from "react"
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
 import type { WalletActivity } from "@/lib/types"
 import { Skeleton } from "@/components/ui/skeleton"
-import { format, subDays, startOfDay } from 'date-fns'
+import { format, subDays, startOfDay, subMonths, startOfMonth } from 'date-fns'
 
 interface ActivityChartProps {
   activities: WalletActivity[];
@@ -135,6 +135,74 @@ export function ActivityByDayChart({ activities, isLoading }: ActivityChartProps
                  labelFormatter={() => ''}
             />
             <Line type="monotone" dataKey="opens" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-2))" }} activeDot={{ r: 6 }} />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+export function ActivityByMonthChart({ activities, isLoading }: ActivityChartProps) {
+  const data = useMemo(() => {
+    const last12Months = Array.from({ length: 12 }).map((_, i) => {
+      const date = subMonths(new Date(), i);
+      return {
+        name: format(date, "MMM"),
+        date: format(date, "MMM yyyy"),
+        opens: 0,
+      };
+    }).reverse();
+
+    const monthNameMap = last12Months.reduce((acc, month) => {
+        acc[month.date] = month;
+        return acc;
+    }, {} as Record<string, typeof last12Months[0]>);
+
+    activities.forEach(activity => {
+      if (activity.timestamp) {
+        const activityMonthStr = format(startOfMonth(activity.timestamp.toDate()), "MMM yyyy");
+        if (monthNameMap[activityMonthStr]) {
+            monthNameMap[activityMonthStr].opens++;
+        }
+      }
+    });
+
+    return Object.values(monthNameMap);
+  }, [activities]);
+
+  if (isLoading) {
+    return <Skeleton className="h-[350px] w-full" />;
+  }
+
+  return (
+    <div className="h-[350px]">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground) / 0.5)" />
+            <XAxis
+                dataKey="name"
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+            />
+            <YAxis
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                allowDecimals={false}
+            />
+            <Tooltip
+                cursor={{ fill: 'hsl(var(--secondary))' }}
+                contentStyle={{
+                    background: "hsl(var(--background))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "var(--radius)",
+                }}
+                 formatter={(value, name, props) => [`${value} opens`, `Date: ${props.payload.date}`]}
+                 labelFormatter={() => ''}
+            />
+            <Line type="monotone" dataKey="opens" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-1))" }} activeDot={{ r: 6 }} />
         </LineChart>
       </ResponsiveContainer>
     </div>
