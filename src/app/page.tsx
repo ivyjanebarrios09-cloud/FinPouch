@@ -20,7 +20,7 @@ export default function Home() {
             data-ai-hint="finance abstract"
             priority
           />
-          <div className="absolute inset-0 bg-background/70 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
           <div className="container px-4 md:px-6 relative">
             <div className="flex flex-col items-center space-y-6 text-center">
               <div className="space-y-4">
