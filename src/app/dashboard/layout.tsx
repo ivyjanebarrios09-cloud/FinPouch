@@ -8,6 +8,7 @@ import { Logo } from "@/components/logo";
 import { UserNav } from "@/components/user-nav";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function DashboardLayout({
   children,
@@ -63,6 +64,7 @@ export default function DashboardLayout({
         </nav>
         <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
             <div className="ml-auto flex-1 sm:flex-initial" />
+            <ThemeToggle />
             <UserNav />
         </div>
       </header>
