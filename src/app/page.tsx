@@ -13,7 +13,7 @@ export default function Home() {
       <main className="flex-1">
         <section className="relative w-full py-12 md:py-24 lg:py-32 xl:py-48 flex items-center justify-center">
           <Image
-            src="https://picsum.photos/seed/hero/1920/1080"
+            src="/image/hero.jpg"
             alt="Hero background"
             fill
             className="object-cover"
