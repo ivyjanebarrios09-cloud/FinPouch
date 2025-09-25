@@ -65,7 +65,7 @@ export function ActivityByHourChart({ activities, isLoading }: ActivityChartProp
                             borderRadius: "var(--radius)",
                         }}
                     />
-                    <Line type="monotone" dataKey="opens" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-1))" }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="opens" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-1))" }} activeDot={{ r: 6 }} animationDuration={1500} />
                 </LineChart>
             </ResponsiveContainer>
         </div>
@@ -134,7 +134,7 @@ export function ActivityByDayChart({ activities, isLoading }: ActivityChartProps
                  formatter={(value, name, props) => [`${value} opens`, `Date: ${props.payload.date}`]}
                  labelFormatter={() => ''}
             />
-            <Line type="monotone" dataKey="opens" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-2))" }} activeDot={{ r: 6 }} />
+            <Line type="monotone" dataKey="opens" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-2))" }} activeDot={{ r: 6 }} animationDuration={1500} />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -202,7 +202,7 @@ export function ActivityByMonthChart({ activities, isLoading }: ActivityChartPro
                  formatter={(value, name, props) => [`${value} opens`, `Date: ${props.payload.date}`]}
                  labelFormatter={() => ''}
             />
-            <Line type="monotone" dataKey="opens" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-1))" }} activeDot={{ r: 6 }} />
+            <Line type="monotone" dataKey="opens" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-1))" }} activeDot={{ r: 6 }} animationDuration={1500} />
         </LineChart>
       </ResponsiveContainer>
     </div>
