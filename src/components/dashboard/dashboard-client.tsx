@@ -54,7 +54,10 @@ export function DashboardClient() {
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const activitiesData: WalletActivity[] = [];
       querySnapshot.forEach((doc) => {
-        activitiesData.push({ id: doc.id, ...doc.data() } as WalletActivity);
+        const data = doc.data();
+        if (data.timestamp) { // Ensure record is not partial
+          activitiesData.push({ id: doc.id, ...doc.data() } as WalletActivity);
+        }
       });
       setActivities(activitiesData);
       setLoading(false);
@@ -93,6 +96,24 @@ export function DashboardClient() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Total Wallet Opens" value={totalOpens} icon={ShoppingCart} isLoading={loading} />
       </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4">
+          <CardHeader>
+            <CardTitle>Wallet Opens by Hour</CardTitle>
+             <CardDescription>
+              An hourly breakdown of your wallet opening habits.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pl-2">
+            <ActivityByHourChart activities={activities} isLoading={loading}/>
+          </CardContent>
+        </Card>
+        <div className="col-span-4 md:col-span-3">
+             <AiAdvice walletOpens={totalOpens} />
+        </div>
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
          <Card>
           <CardHeader>
@@ -118,22 +139,6 @@ export function DashboardClient() {
             <ActivityByMonthChart activities={activities} isLoading={loading}/>
           </CardContent>
         </Card>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Wallet Opens by Hour</CardTitle>
-             <CardDescription>
-              An hourly breakdown of your wallet opening habits.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pl-2">
-            <ActivityByHourChart activities={activities} isLoading={loading}/>
-          </CardContent>
-        </Card>
-        <div className="col-span-4 md:col-span-3">
-             <AiAdvice walletOpens={totalOpens} />
-        </div>
       </div>
     </>
   );
