@@ -25,7 +25,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ActivityByDayChart, SpentNotSpentChart } from "./charts";
@@ -55,7 +54,6 @@ export function DashboardClient() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentActivityId, setCurrentActivityId] = useState<string | null>(null);
-  const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -94,7 +92,6 @@ export function DashboardClient() {
         {
           timestamp: serverTimestamp(),
           didSpend: null,
-          note: "",
           userId: user.uid,
         }
       );
@@ -112,14 +109,12 @@ export function DashboardClient() {
       const activityDocRef = doc(db, "users", user.uid, "walletActivity", currentActivityId);
       await updateDoc(activityDocRef, {
         didSpend,
-        note,
       });
     } catch (error) {
       console.error("Error updating document: ", error);
     } finally {
       setIsSubmitting(false);
       setIsDialogOpen(false);
-      setNote("");
       setCurrentActivityId(null);
     }
   };
@@ -165,16 +160,9 @@ export function DashboardClient() {
           <DialogHeader>
             <DialogTitle>What happened?</DialogTitle>
             <DialogDescription>
-              You've opened your wallet. Did you make a purchase? Add a note for your future self.
+              You've opened your wallet. Did you make a purchase?
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <Textarea
-              placeholder="e.g., Bought coffee, or just resisted buying snacks."
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
-          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => handleTagActivity(false)} disabled={isSubmitting}>
               {isSubmitting ? "Saving..." : "Didn't Spend"}

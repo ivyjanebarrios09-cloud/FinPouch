@@ -4,6 +4,5 @@ export type WalletActivity = {
   id: string;
   timestamp: Timestamp;
   didSpend: boolean | null;
-  note: string;
   userId: string;
 };

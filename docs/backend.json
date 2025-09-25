@@ -32,10 +32,6 @@
           "type": "boolean",
           "description": "Whether or not the user spent money."
         },
-        "note": {
-          "type": "string",
-          "description": "A note about the activity."
-        },
         "userId": {
           "type": "string",
           "description": "The ID of the user who performed the activity."

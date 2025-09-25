@@ -62,7 +62,6 @@ export function RecordsClient() {
       <TableRow key={`loading-${i}`}>
         <TableCell><Skeleton className="h-5 w-32" /></TableCell>
         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-full" /></TableCell>
       </TableRow>
     ));
   };
@@ -82,7 +81,6 @@ export function RecordsClient() {
                     <TableRow>
                     <TableHead className="w-[180px]">Date</TableHead>
                     <TableHead className="w-[120px]">Action</TableHead>
-                    <TableHead>Note</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -97,11 +95,10 @@ export function RecordsClient() {
                                 {activity.didSpend === false && <Badge variant="secondary">Not Spent</Badge>}
                                 {activity.didSpend === null && <Badge variant="outline">Pending</Badge>}
                                 </TableCell>
-                                <TableCell className="text-muted-foreground">{activity.note || "-"}</TableCell>
                             </TableRow>
                         )) : (
                             <TableRow>
-                                <TableCell colSpan={3} className="h-24 text-center">
+                                <TableCell colSpan={2} className="h-24 text-center">
                                     No records found.
                                 </TableCell>
                             </TableRow>
