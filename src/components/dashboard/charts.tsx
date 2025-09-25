@@ -65,29 +65,25 @@ export function SpentNotSpentChart({ stats, isLoading }: SpentNotSpentChartProps
   )
 }
 
-interface ActivityByDayChartProps {
+interface ActivityByHourChartProps {
   activities: WalletActivity[];
   isLoading: boolean;
 }
 
-export function ActivityByDayChart({ activities, isLoading }: ActivityByDayChartProps) {
+export function ActivityByHourChart({ activities, isLoading }: ActivityByHourChartProps) {
     const data = useMemo(() => {
-        const dayCounts = [
-            { name: "Sun", opens: 0 },
-            { name: "Mon", opens: 0 },
-            { name: "Tue", opens: 0 },
-            { name: "Wed", opens: 0 },
-            { name: "Thu", opens: 0 },
-            { name: "Fri", opens: 0 },
-            { name: "Sat", opens: 0 },
-        ];
+        const hourCounts = Array.from({ length: 24 }, (_, i) => ({
+            name: i.toString().padStart(2, '0'),
+            opens: 0,
+        }));
+
         activities.forEach(activity => {
             if (activity.timestamp) {
-              const dayIndex = activity.timestamp.toDate().getDay();
-              dayCounts[dayIndex].opens++;
+              const hour = activity.timestamp.toDate().getHours();
+              hourCounts[hour].opens++;
             }
         });
-        return dayCounts;
+        return hourCounts;
     }, [activities]);
 
     if (isLoading) {
@@ -104,6 +100,7 @@ export function ActivityByDayChart({ activities, isLoading }: ActivityByDayChart
                         fontSize={12}
                         tickLine={false}
                         axisLine={false}
+                        tickFormatter={(value) => `${value}:00`}
                     />
                     <YAxis
                         stroke="hsl(var(--muted-foreground))"

@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ActivityByDayChart, SpentNotSpentChart } from "./charts";
+import { ActivityByHourChart, SpentNotSpentChart } from "./charts";
 import { AiAdvice } from "./ai-advice";
 
 function StatCard({ title, value, icon: Icon, isLoading }: { title: string; value: string | number; icon: React.ElementType; isLoading: boolean; }) {
@@ -138,10 +138,10 @@ export function DashboardClient() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">
           <CardHeader>
-            <CardTitle>Spending by Day</CardTitle>
+            <CardTitle>Wallet Opens by Hour</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
-            <ActivityByDayChart activities={activities} isLoading={loading}/>
+            <ActivityByHourChart activities={activities} isLoading={loading}/>
           </CardContent>
         </Card>
         <Card className="col-span-4 md:col-span-3">
