@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
+import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
 import type { WalletActivity } from "@/lib/types"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -33,7 +33,8 @@ export function ActivityByHourChart({ activities, isLoading }: ActivityByHourCha
     return (
         <div className="h-[350px]">
             <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data}>
+                <LineChart data={data}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground) / 0.5)" />
                     <XAxis
                         dataKey="name"
                         stroke="hsl(var(--muted-foreground))"
@@ -63,8 +64,8 @@ export function ActivityByHourChart({ activities, isLoading }: ActivityByHourCha
                             borderRadius: "var(--radius)",
                         }}
                     />
-                    <Bar dataKey="opens" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
-                </BarChart>
+                    <Line type="monotone" dataKey="opens" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-1))" }} activeDot={{ r: 6 }} />
+                </LineChart>
             </ResponsiveContainer>
         </div>
     )
