@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, ShoppingCart } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ActivityByHourChart, ActivityByDayChart, ActivityByMonthChart } from "./charts";
+import { ActivityByHourChart, ActivityByDayChart, ActivityByMonthChart, ActivityDoughnutChart } from "./charts";
 import { AiAdvice } from "./ai-advice";
 
 function StatCard({ title, value, icon: Icon, isLoading }: { title: string; value: string | number; icon: React.ElementType; isLoading: boolean; }) {
@@ -109,8 +109,19 @@ export function DashboardClient() {
             <ActivityByHourChart activities={activities} isLoading={loading}/>
           </CardContent>
         </Card>
-        <div className="col-span-4 md:col-span-3">
+        <div className="col-span-4 md:col-span-3 space-y-4">
              <AiAdvice walletOpens={totalOpens} />
+             <Card>
+                <CardHeader>
+                    <CardTitle>Peak Activity</CardTitle>
+                    <CardDescription>
+                        A distribution of your wallet opens by hour.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ActivityDoughnutChart activities={activities} isLoading={loading} />
+                </CardContent>
+             </Card>
         </div>
       </div>
 
