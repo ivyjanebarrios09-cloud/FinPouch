@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { ActivityByHourChart, ActivityByDayChart, ActivityByMonthChart, ActivityDoughnutChart } from "./charts";
 import { AiAdvice } from "./ai-advice";
+import { subDays } from "date-fns";
 
 function StatCard({ title, value, icon: Icon, isLoading }: { title: string; value: string | number; icon: React.ElementType; isLoading: boolean; }) {
   return (
@@ -68,6 +69,13 @@ export function DashboardClient() {
 
   const totalOpens = activities.length;
 
+  const weeklyActivities = useMemo(() => {
+    const oneWeekAgo = subDays(new Date(), 7);
+    return activities.filter(
+      (activity) => activity.timestamp && activity.timestamp.toDate() > oneWeekAgo
+    );
+  }, [activities]);
+
   const handleOpenWallet = async () => {
     if (!user) return;
     try {
@@ -113,13 +121,13 @@ export function DashboardClient() {
              <AiAdvice walletOpens={totalOpens} />
              <Card>
                 <CardHeader>
-                    <CardTitle>Peak Activity</CardTitle>
+                    <CardTitle>Weekly Peak Activity</CardTitle>
                     <CardDescription>
-                        A distribution of your wallet opens by hour.
+                        A distribution of your wallet opens by hour this week.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <ActivityDoughnutChart activities={activities} isLoading={loading} />
+                    <ActivityDoughnutChart activities={weeklyActivities} isLoading={loading} />
                 </CardContent>
              </Card>
         </div>
