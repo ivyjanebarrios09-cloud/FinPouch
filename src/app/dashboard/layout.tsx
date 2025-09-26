@@ -2,13 +2,19 @@
 
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { UserNav } from "@/components/user-nav";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Menu } from "lucide-react";
 
 export default function DashboardLayout({
   children,
@@ -18,6 +24,7 @@ export default function DashboardLayout({
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -38,6 +45,10 @@ export default function DashboardLayout({
     { name: "Dashboard", href: "/dashboard" },
     { name: "Records", href: "/dashboard/records" },
   ];
+  
+  const handleLinkClick = () => {
+    setIsSheetOpen(false);
+  };
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -62,6 +73,42 @@ export default function DashboardLayout({
             </Link>
           ))}
         </nav>
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+          <SheetTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0 md:hidden"
+            >
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle navigation menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left">
+            <nav className="grid gap-6 text-lg font-medium">
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 text-lg font-semibold"
+                onClick={handleLinkClick}
+              >
+                <Logo />
+              </Link>
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={handleLinkClick}
+                  className={cn(
+                    "text-muted-foreground hover:text-foreground",
+                    pathname === item.href && "text-foreground"
+                  )}
+                >
+                  {item.name}
+                </Link>
+              ))}
+            </nav>
+          </SheetContent>
+        </Sheet>
         <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
             <div className="ml-auto flex-1 sm:flex-initial" />
             <ThemeToggle />
