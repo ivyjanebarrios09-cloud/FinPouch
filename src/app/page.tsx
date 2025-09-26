@@ -24,7 +24,7 @@ export default function Home() {
           <div className="container px-4 md:px-6 relative">
             <div className="flex flex-col items-center space-y-6 text-center">
               <div className="space-y-4">
-                <Image src="/loogoo.jpg" alt="FinPouch Logo" width={200} height={200} className="rounded-lg mx-auto" />
+                <Image src="/llooggoo.png" alt="FinPouch Logo" width={200} height={200} className="rounded-lg mx-auto" />
                 <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm text-secondary-foreground">
                   <Wallet className="inline-block w-4 h-4 mr-2" />
                   Your Financial Companion
