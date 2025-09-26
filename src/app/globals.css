@@ -8,11 +8,11 @@ body {
 
 @layer base {
   :root {
-    --background: 60 83% 94%; /* #FEFAE0 */
+    --background: 0 0% 98%; /* #fafafa */
     --foreground: 35 21% 25%; /* a dark brown for text */
-    --card: 60 83% 94%; /* #FEFAE0 */
+    --card: 0 0% 98%;
     --card-foreground: 35 21% 25%;
-    --popover: 60 83% 94%; /* #FEFAE0 */
+    --popover: 0 0% 98%;
     --popover-foreground: 35 21% 25%;
     --primary: 84 34% 77%; /* #CCD5AE */
     --primary-foreground: 35 21% 25%;
@@ -35,18 +35,18 @@ body {
     --radius: 0.5rem;
   }
   .dark {
-    --background: 35 21% 15%; /* Dark Brown */
-    --foreground: 60 83% 94%; /* #FEFAE0 */
-    --card: 35 21% 15%;
-    --card-foreground: 60 83% 94%;
-    --popover: 35 21% 15%;
-    --popover-foreground: 60 83% 94%;
+    --background: 0 0% 3.9%; /* #0a0a0a */
+    --foreground: 0 0% 98%; /* #fafafa */
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
     --primary: 84 34% 67%; /* a bit darker #CCD5AE */
     --primary-foreground: 35 21% 15%;
     --secondary: 76 43% 75%; /* a bit darker #E9EDC9 */
     --secondary-foreground: 35 21% 15%;
     --muted: 76 43% 75%;
-    --muted-foreground: 60 83% 88%;
+    --muted-foreground: 0 0% 63.9%;
     --accent: 30 74% 54%; /* a bit darker #D4A373 */
     --accent-foreground: 35 21% 15%;
     --destructive: 0 62.8% 30.6%;
