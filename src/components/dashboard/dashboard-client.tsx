@@ -13,12 +13,12 @@ import {
 } from "firebase/firestore";
 import type { WalletActivity } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, ShoppingCart } from "lucide-react";
+import { PlusCircle, ShoppingCart, CalendarDays } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ActivityByHourChart, ActivityByDayChart, ActivityByMonthChart, ActivityDoughnutChart } from "./charts";
 import { AiAdvice } from "./ai-advice";
-import { subDays } from "date-fns";
+import { subDays, startOfToday } from "date-fns";
 
 function StatCard({ title, value, icon: Icon, isLoading }: { title: string; value: string | number; icon: React.ElementType; isLoading: boolean; }) {
   return (
@@ -69,6 +69,13 @@ export function DashboardClient() {
 
   const totalOpens = activities.length;
 
+  const opensToday = useMemo(() => {
+    const today = startOfToday();
+    return activities.filter(
+      (activity) => activity.timestamp && activity.timestamp.toDate() >= today
+    ).length;
+  }, [activities]);
+
   const weeklyActivities = useMemo(() => {
     const oneWeekAgo = subDays(new Date(), 7);
     return activities.filter(
@@ -103,6 +110,7 @@ export function DashboardClient() {
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Total Wallet Opens" value={totalOpens} icon={ShoppingCart} isLoading={loading} />
+        <StatCard title="Wallet Opens Today" value={opensToday} icon={CalendarDays} isLoading={loading} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
