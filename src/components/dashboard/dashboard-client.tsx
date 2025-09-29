@@ -8,19 +8,13 @@ import {
   query,
   onSnapshot,
   orderBy,
-  addDoc,
-  serverTimestamp,
 } from "firebase/firestore";
 import type { WalletActivity, Device } from "@/lib/types";
-import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator
-} from "@/components/ui/dropdown-menu";
-import { PlusCircle, ShoppingCart, CalendarDays, Smartphone } from "lucide-react";
+  ShoppingCart,
+  CalendarDays,
+  Smartphone,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ActivityByHourChart, ActivityByDayChart, ActivityByMonthChart, ActivityDoughnutChart } from "./charts";
@@ -107,52 +101,10 @@ export function DashboardClient() {
     );
   }, [activities]);
 
-  const handleOpenWallet = async (device?: Device) => {
-    if (!user) return;
-    try {
-      await addDoc(
-        collection(db, "users", user.uid, "walletActivity"),
-        {
-          timestamp: serverTimestamp(),
-          userId: user.uid,
-          ...(device && { deviceId: device.deviceId, deviceName: device.name }),
-        }
-      );
-    } catch (error) {
-      console.error("Error adding document: ", error);
-    }
-  };
-
   return (
     <>
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight font-headline">Dashboard</h2>
-        <div className="flex items-center space-x-2">
-           {devices.length > 0 ? (
-             <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Open Wallet
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    <DropdownMenuItem onSelect={() => handleOpenWallet()}>
-                        General
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    {devices.map(device => (
-                        <DropdownMenuItem key={device.id} onSelect={() => handleOpenWallet(device)}>
-                            {device.name}
-                        </DropdownMenuItem>
-                    ))}
-                </DropdownMenuContent>
-             </DropdownMenu>
-           ) : (
-            <Button onClick={() => handleOpenWallet()}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Open Wallet
-            </Button>
-           )}
-        </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Total Wallet Opens" value={totalOpens} icon={ShoppingCart} isLoading={loading} />
