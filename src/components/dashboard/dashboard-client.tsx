@@ -147,7 +147,7 @@ export function DashboardClient() {
             <CardDescription>
               A look at your wallet opening frequency over the past week.
             </CardDescription>
-          </CardHeader>
+          </Header>
           <CardContent className="pl-2">
             <ActivityByDayChart activities={activities} isLoading={loading}/>
           </CardContent>
@@ -160,7 +160,7 @@ export function DashboardClient() {
             <CardDescription>
               A look at your wallet opening frequency over the past year.
             </CardDescription>
-          </CardHeader>
+          </Header>
           <CardContent className="pl-2">
             <ActivityByMonthChart activities={activities} isLoading={loading}/>
           </CardContent>
