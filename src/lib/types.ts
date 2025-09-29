@@ -4,6 +4,8 @@ export type WalletActivity = {
   id: string;
   timestamp: Timestamp;
   userId: string;
+  deviceId?: string;
+  deviceName?: string;
 };
 
 export type Device = {

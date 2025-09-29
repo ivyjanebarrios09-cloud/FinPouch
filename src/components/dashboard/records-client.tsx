@@ -63,6 +63,7 @@ export function RecordsClient() {
             <TableHeader>
                 <TableRow>
                 <TableHead>Date</TableHead>
+                <TableHead>Device</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -72,10 +73,11 @@ export function RecordsClient() {
                             <TableCell className="font-medium">
                             {format(activity.timestamp.toDate(), "MMM d, yyyy 'at' h:mm a")}
                             </TableCell>
+                            <TableCell>{activity.deviceName || activity.deviceId || 'General'}</TableCell>
                         </TableRow>
                     )) : (
                         <TableRow>
-                            <TableCell colSpan={1} className="h-24 text-center">
+                            <TableCell colSpan={2} className="h-24 text-center">
                                 No records found.
                             </TableCell>
                         </TableRow>

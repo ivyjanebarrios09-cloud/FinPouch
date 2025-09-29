@@ -11,9 +11,16 @@ import {
   addDoc,
   serverTimestamp,
 } from "firebase/firestore";
-import type { WalletActivity } from "@/lib/types";
+import type { WalletActivity, Device } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, ShoppingCart, CalendarDays } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
+import { PlusCircle, ShoppingCart, CalendarDays, Smartphone } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ActivityByHourChart, ActivityByDayChart, ActivityByMonthChart, ActivityDoughnutChart } from "./charts";
@@ -41,33 +48,50 @@ function StatCard({ title, value, icon: Icon, isLoading }: { title: string; valu
 export function DashboardClient() {
   const { user } = useAuth();
   const [activities, setActivities] = useState<WalletActivity[]>([]);
+  const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
 
     setLoading(true);
-    const q = query(
+    const activityQuery = query(
       collection(db, "users", user.uid, "walletActivity"),
       orderBy("timestamp", "desc")
     );
+    const deviceQuery = query(
+        collection(db, "users", user.uid, "devices"),
+        orderBy("createdAt", "desc")
+    );
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const unsubscribeActivities = onSnapshot(activityQuery, (querySnapshot) => {
       const activitiesData: WalletActivity[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        if (data.timestamp) { // Ensure record is not partial
+        if (data.timestamp) {
           activitiesData.push({ id: doc.id, ...doc.data() } as WalletActivity);
         }
       });
       setActivities(activitiesData);
       setLoading(false);
     });
+    
+    const unsubscribeDevices = onSnapshot(deviceQuery, (querySnapshot) => {
+        const devicesData: Device[] = [];
+        querySnapshot.forEach((doc) => {
+            devicesData.push({ id: doc.id, ...doc.data() } as Device);
+        });
+        setDevices(devicesData);
+    });
 
-    return () => unsubscribe();
+    return () => {
+        unsubscribeActivities();
+        unsubscribeDevices();
+    };
   }, [user]);
 
   const totalOpens = activities.length;
+  const totalDevices = devices.length;
 
   const opensToday = useMemo(() => {
     const today = startOfToday();
@@ -83,7 +107,7 @@ export function DashboardClient() {
     );
   }, [activities]);
 
-  const handleOpenWallet = async () => {
+  const handleOpenWallet = async (device?: Device) => {
     if (!user) return;
     try {
       await addDoc(
@@ -91,6 +115,7 @@ export function DashboardClient() {
         {
           timestamp: serverTimestamp(),
           userId: user.uid,
+          ...(device && { deviceId: device.deviceId, deviceName: device.name }),
         }
       );
     } catch (error) {
@@ -103,14 +128,36 @@ export function DashboardClient() {
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight font-headline">Dashboard</h2>
         <div className="flex items-center space-x-2">
-          <Button onClick={handleOpenWallet}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Open Wallet
-          </Button>
+           {devices.length > 0 ? (
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Open Wallet
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuItem onSelect={() => handleOpenWallet()}>
+                        General
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    {devices.map(device => (
+                        <DropdownMenuItem key={device.id} onSelect={() => handleOpenWallet(device)}>
+                            {device.name}
+                        </DropdownMenuItem>
+                    ))}
+                </DropdownMenuContent>
+             </DropdownMenu>
+           ) : (
+            <Button onClick={() => handleOpenWallet()}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Open Wallet
+            </Button>
+           )}
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Total Wallet Opens" value={totalOpens} icon={ShoppingCart} isLoading={loading} />
         <StatCard title="Wallet Opens Today" value={opensToday} icon={CalendarDays} isLoading={loading} />
+        <StatCard title="Registered Devices" value={totalDevices} icon={Smartphone} isLoading={loading} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
