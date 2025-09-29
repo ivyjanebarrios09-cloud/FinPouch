@@ -44,6 +44,7 @@ export default function DashboardLayout({
   const navItems = [
     { name: "Dashboard", href: "/dashboard" },
     { name: "Records", href: "/dashboard/records" },
+    { name: "Devices", href: "/dashboard/devices" },
   ];
   
   const handleLinkClick = () => {

@@ -34,6 +34,31 @@
         }
       },
       "required": ["timestamp", "userId"]
+    },
+    "device": {
+      "title": "Device",
+      "description": "A device registered by a user.",
+      "type": "object",
+      "properties": {
+        "deviceId": {
+          "type": "string",
+          "description": "The unique ID of the device."
+        },
+        "name": {
+            "type": "string",
+            "description": "A user-friendly name for the device."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns the device."
+        },
+        "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The time the device was registered."
+        }
+      },
+      "required": ["deviceId", "name", "userId", "createdAt"]
     }
   },
   "auth": {
@@ -45,6 +70,12 @@
         "$ref": "#/entities/walletActivity"
       },
       "description": "Stores wallet activity for each user."
+    },
+    "/users/{userId}/devices/{deviceId}": {
+      "schema": {
+        "$ref": "#/entities/device"
+      },
+      "description": "Stores devices registered by each user."
     }
   }
 }
