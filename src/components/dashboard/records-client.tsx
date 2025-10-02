@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
-import { collection, query, onSnapshot, Unsubscribe } from "firebase/firestore";
+import { collection, query, onSnapshot, Unsubscribe, DocumentData } from "firebase/firestore";
 import type { WalletActivity, Device } from "@/lib/types";
 import { format } from "date-fns";
 import {
@@ -26,21 +26,20 @@ export function RecordsClient() {
     if (!user) {
         setLoading(false);
         return;
-    };
+    }
 
     setLoading(true);
-    
-    // 1. Get the user's devices
-    const deviceQuery = query(collection(db, "users", user.uid, "devices"));
 
-    const unsubscribeDevices = onSnapshot(deviceQuery, (deviceSnapshot) => {
+    // 1. Get the user's devices
+    const devicesQuery = query(collection(db, "users", user.uid, "devices"));
+    const unsubscribeDevices = onSnapshot(devicesQuery, (devicesSnapshot) => {
         const devicesData: Device[] = [];
-        deviceSnapshot.forEach(doc => {
+        devicesSnapshot.forEach((doc) => {
             devicesData.push({ id: doc.id, ...doc.data() } as Device);
         });
 
-        let activityUnsubscribers: Unsubscribe[] = [];
         let allActivities: WalletActivity[] = [];
+        const activityUnsubscribers: Unsubscribe[] = [];
 
         if (devicesData.length === 0) {
             setActivities([]);
@@ -82,12 +81,9 @@ export function RecordsClient() {
                 setActivities([...allActivities].slice(0, 50)); // Apply limit client-side
             });
             activityUnsubscribers.push(unsubscribeActivities);
-
-            devicesProcessed++;
-            if (devicesProcessed === devicesData.length) {
-                setLoading(false);
-            }
         });
+        
+        setLoading(false);
 
         // This function is returned for cleanup
         return () => {
@@ -99,7 +95,6 @@ export function RecordsClient() {
     return () => {
         unsubscribeDevices();
     };
-
   }, [user]);
 
   const renderLoadingRows = () => {

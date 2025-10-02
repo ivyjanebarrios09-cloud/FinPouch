@@ -8,8 +8,7 @@ import {
   query,
   onSnapshot,
   orderBy,
-  collectionGroup,
-  where,
+  Unsubscribe,
 } from "firebase/firestore";
 import type { WalletActivity, Device } from "@/lib/types";
 import {
@@ -57,64 +56,6 @@ export function DashboardClient() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // -------------------------
-  // Helper: normalize timestamp -> millis
-  // -------------------------
-  function timestampToMillis(ts: any): number {
-    if (!ts) return 0;
-
-    // Firestore Timestamp (has toMillis)
-    if (typeof ts === "object") {
-      if (typeof ts.toMillis === "function") {
-        return ts.toMillis();
-      }
-      if (typeof ts.toDate === "function") {
-        return ts.toDate().getTime();
-      }
-      // raw object { seconds, nanoseconds }
-      if ("seconds" in ts && "nanoseconds" in ts) {
-        const secs = Number(ts.seconds || 0);
-        const nanos = Number(ts.nanoseconds || 0);
-        return secs * 1000 + Math.floor(nanos / 1e6);
-      }
-    }
-
-    // number (ms)
-    if (typeof ts === "number") return ts;
-
-    // string: try ISO, then custom DD/MM/YYYY - hh:mm:ss AM/PM, then Date fallback
-    if (typeof ts === "string") {
-      // try ISO first
-      const iso = Date.parse(ts);
-      if (!isNaN(iso)) return iso;
-
-      // try custom "DD/MM/YYYY - HH:MM:SS AM/PM"
-      const m = ts.match(/(\d{2})\/(\d{2})\/(\d{4})\s*-\s*(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)?/i);
-      if (m) {
-        const day = parseInt(m[1], 10);
-        const month = parseInt(m[2], 10) - 1; // JS months 0-11
-        const year = parseInt(m[3], 10);
-        let hour = parseInt(m[4], 10);
-        const minute = parseInt(m[5], 10);
-        const second = parseInt(m[6], 10);
-        const ampm = m[7];
-        if (ampm) {
-          if (ampm.toUpperCase() === "PM" && hour < 12) hour += 12;
-          if (ampm.toUpperCase() === "AM" && hour === 12) hour = 0;
-        }
-        const d = new Date(year, month, day, hour, minute, second);
-        if (!isNaN(d.getTime())) return d.getTime();
-      }
-
-      // final fallback
-      const d2 = new Date(ts);
-      if (!isNaN(d2.getTime())) return d2.getTime();
-    }
-
-    // unknown shape -> return 0 so it sorts to the end
-    return 0;
-  }
-
   useEffect(() => {
     if (!user) {
       setLoading(false);
@@ -134,57 +75,74 @@ export function DashboardClient() {
         devicesData.push({ id: doc.id, ...(doc.data() as any) } as Device);
       });
       setDevices(devicesData);
-    });
 
-    // NOTE: if you want to avoid indexes, replace this collectionGroup+where+orderBy with a plain
-    // collectionGroup(db, "walletActivity") and do filtering/sorting client-side. If you already have
-    // the composite index in Firestore, this code will work fine.
-    const activityQuery = query(
-      collectionGroup(db, "walletActivity"),
-      where("userId", "==", user.uid),
-      orderBy("timestamp", "desc")
-    );
+      const activityUnsubscribers: Unsubscribe[] = [];
+      let allActivities: WalletActivity[] = [];
 
-    const unsubscribeActivities = onSnapshot(activityQuery, (querySnapshot) => {
-      const activitiesData: WalletActivity[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        // keep whatever timestamp shape Firestore gives you — we'll normalize when needed
-        activitiesData.push({ id: doc.id, ...(data as any) } as WalletActivity);
+      if (devicesData.length === 0) {
+        setActivities([]);
+        setLoading(false);
+        return;
+      }
+
+      devicesData.forEach((device) => {
+        const activityQuery = query(
+          collection(db, "users", user.uid, "devices", device.id, "walletActivity")
+        );
+
+        const unsubscribeActivity = onSnapshot(activityQuery, (activitySnapshot) => {
+          allActivities = allActivities.filter(act => act.deviceId !== device.id);
+
+          activitySnapshot.forEach((doc) => {
+            const data = doc.data();
+            if (data.timestamp) {
+              allActivities.push({
+                id: doc.id,
+                ...data,
+                deviceId: device.id,
+                deviceName: device.name,
+              } as WalletActivity);
+            }
+          });
+
+          allActivities.sort((a, b) => {
+            if (a.timestamp && b.timestamp) {
+              return b.timestamp.toMillis() - a.timestamp.toMillis();
+            }
+            return 0;
+          });
+
+          setActivities([...allActivities]);
+        });
+        activityUnsubscribers.push(unsubscribeActivity);
       });
 
-      // Optionally: sort client-side just in case timestamp types are mixed
-      activitiesData.sort((a: any, b: any) => {
-        return timestampToMillis(b.timestamp) - timestampToMillis(a.timestamp);
-      });
-
-      setActivities(activitiesData);
       setLoading(false);
+
+      return () => {
+        activityUnsubscribers.forEach((unsub) => unsub());
+      };
     });
 
     return () => {
       unsubscribeDevices();
-      unsubscribeActivities();
     };
   }, [user]);
 
   const totalOpens = activities.length;
   const totalDevices = devices.length;
 
-  // -------------------------
-  // Use timestampToMillis in derived values
-  // -------------------------
   const opensToday = useMemo(() => {
-    const todayMs = startOfToday().getTime();
+    const todayStart = startOfToday();
     return activities.filter(
-      (activity) => timestampToMillis((activity as any).timestamp) >= todayMs
+      (activity) => activity.timestamp && activity.timestamp.toDate() >= todayStart
     ).length;
   }, [activities]);
 
   const weeklyActivities = useMemo(() => {
-    const oneWeekAgoMs = subDays(new Date(), 7).getTime();
+    const oneWeekAgo = subDays(new Date(), 7);
     return activities.filter(
-      (activity) => timestampToMillis((activity as any).timestamp) > oneWeekAgoMs
+      (activity) => activity.timestamp && activity.timestamp.toDate() > oneWeekAgo
     );
   }, [activities]);
 
