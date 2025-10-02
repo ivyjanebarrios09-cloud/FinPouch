@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -24,7 +23,17 @@ import { ActivityByHourChart, ActivityDoughnutChart } from "./charts";
 import { AiAdvice } from "./ai-advice";
 import { subDays, startOfToday } from "date-fns";
 
-function StatCard({ title, value, icon: Icon, isLoading }: { title: string; value: string | number; icon: React.ElementType; isLoading: boolean; }) {
+function StatCard({
+  title,
+  value,
+  icon: Icon,
+  isLoading,
+}: {
+  title: string;
+  value: string | number;
+  icon: React.ElementType;
+  isLoading: boolean;
+}) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -70,21 +79,21 @@ export function DashboardClient() {
     });
 
     const activityQuery = query(
-        collectionGroup(db, "walletActivity"),
-        where("userId", "==", user.uid),
-        orderBy("timestamp", "desc")
+      collectionGroup(db, "walletActivity"),
+      where("userId", "==", user.uid),
+      orderBy("timestamp", "desc")
     );
 
     const unsubscribeActivities = onSnapshot(activityQuery, (querySnapshot) => {
-        const activitiesData: WalletActivity[] = [];
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            if (data.timestamp) {
-                activitiesData.push({ id: doc.id, ...data } as WalletActivity);
-            }
-        });
-        setActivities(activitiesData);
-        setLoading(false);
+      const activitiesData: WalletActivity[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.timestamp) {
+          activitiesData.push({ id: doc.id, ...data } as WalletActivity);
+        }
+      });
+      setActivities(activitiesData);
+      setLoading(false);
     });
 
     return () => {
@@ -113,13 +122,30 @@ export function DashboardClient() {
   return (
     <>
       <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight font-headline">Dashboard</h2>
+        <h2 className="text-3xl font-bold tracking-tight font-headline">
+          Dashboard
+        </h2>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <StatCard title="Total Wallet Opens" value={totalOpens} icon={ShoppingCart} isLoading={loading} />
-        <StatCard title="Wallet Opens Today" value={opensToday} icon={CalendarDays} isLoading={loading} />
-        <StatCard title="Registered Devices" value={totalDevices} icon={Smartphone} isLoading={loading} />
+        <StatCard
+          title="Total Wallet Opens"
+          value={totalOpens}
+          icon={ShoppingCart}
+          isLoading={loading}
+        />
+        <StatCard
+          title="Wallet Opens Today"
+          value={opensToday}
+          icon={CalendarDays}
+          isLoading={loading}
+        />
+        <StatCard
+          title="Registered Devices"
+          value={totalDevices}
+          icon={Smartphone}
+          isLoading={loading}
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
@@ -144,7 +170,7 @@ export function DashboardClient() {
               <CardDescription>
                 A distribution of your wallet opens by hour this week.
               </CardDescription>
-            </Header>
+            </CardHeader>
             <CardContent>
               <ActivityDoughnutChart
                 activities={weeklyActivities}
