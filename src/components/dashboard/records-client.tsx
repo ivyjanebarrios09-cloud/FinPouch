@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
-import { collection, query, onSnapshot, orderBy, limit } from "firebase/firestore";
+import { collectionGroup, query, onSnapshot, orderBy, limit, where } from "firebase/firestore";
 import type { WalletActivity } from "@/lib/types";
 import { format } from "date-fns";
 import {
@@ -23,11 +23,15 @@ export function RecordsClient() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+        setLoading(false);
+        return;
+    };
 
     setLoading(true);
     const q = query(
-      collection(db, "users", user.uid, "walletActivity"),
+      collectionGroup(db, "walletActivity"),
+      where("userId", "==", user.uid),
       orderBy("timestamp", "desc"),
       limit(50)
     );

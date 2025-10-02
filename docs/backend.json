@@ -73,11 +73,11 @@
     "providers": ["email"]
   },
   "firestore": {
-    "/users/{userId}/walletActivity/{activityId}": {
+    "/users/{userId}/devices/{deviceId}/walletActivity/{activityId}": {
       "schema": {
         "$ref": "#/entities/walletActivity"
       },
-      "description": "Stores wallet activity for each user."
+      "description": "Stores wallet activity for each device."
     },
     "/users/{userId}/devices/{deviceId}": {
       "schema": {
@@ -87,4 +87,3 @@
     }
   }
 }
-

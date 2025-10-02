@@ -8,6 +8,8 @@ import {
   query,
   onSnapshot,
   orderBy,
+  collectionGroup,
+  where,
 } from "firebase/firestore";
 import type { WalletActivity, Device } from "@/lib/types";
 import {
@@ -49,41 +51,45 @@ export function DashboardClient() {
     if (!user) {
       setLoading(false);
       return;
-    };
+    }
 
     setLoading(true);
 
-    const activityQuery = query(
-      collection(db, "users", user.uid, "walletActivity"),
-      orderBy("timestamp", "desc")
-    );
-    const unsubscribeActivities = onSnapshot(activityQuery, (querySnapshot) => {
-      const activitiesData: WalletActivity[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.timestamp) {
-          activitiesData.push({ id: doc.id, ...doc.data() } as WalletActivity);
-        }
-      });
-      setActivities(activitiesData);
-      setLoading(false);
-    });
-    
     const deviceQuery = query(
-        collection(db, "users", user.uid, "devices"),
-        orderBy("createdAt", "desc")
+      collection(db, "users", user.uid, "devices"),
+      orderBy("createdAt", "desc")
     );
+
     const unsubscribeDevices = onSnapshot(deviceQuery, (querySnapshot) => {
-        const devicesData: Device[] = [];
+      const devicesData: Device[] = [];
+      querySnapshot.forEach((doc) => {
+        devicesData.push({ id: doc.id, ...doc.data() } as Device);
+      });
+      setDevices(devicesData);
+    });
+
+    // We use a collection group query to get all walletActivity from all devices for the user.
+    const activityQuery = query(
+        collectionGroup(db, "walletActivity"),
+        where("userId", "==", user.uid),
+        orderBy("timestamp", "desc")
+    );
+
+    const unsubscribeActivities = onSnapshot(activityQuery, (querySnapshot) => {
+        const activitiesData: WalletActivity[] = [];
         querySnapshot.forEach((doc) => {
-            devicesData.push({ id: doc.id, ...doc.data() } as Device);
+            const data = doc.data();
+            if (data.timestamp) {
+                activitiesData.push({ id: doc.id, ...data } as WalletActivity);
+            }
         });
-        setDevices(devicesData);
+        setActivities(activitiesData);
+        setLoading(false);
     });
 
     return () => {
-        unsubscribeActivities();
-        unsubscribeDevices();
+      unsubscribeDevices();
+      unsubscribeActivities();
     };
   }, [user]);
 
@@ -138,7 +144,7 @@ export function DashboardClient() {
               <CardDescription>
                 A distribution of your wallet opens by hour this week.
               </CardDescription>
-            </CardHeader>
+            </Header>
             <CardContent>
               <ActivityDoughnutChart
                 activities={weeklyActivities}
