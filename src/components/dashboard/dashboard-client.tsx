@@ -68,7 +68,6 @@ export function DashboardClient() {
       setDevices(devicesData);
     });
 
-    // We use a collection group query to get all walletActivity from all devices for the user.
     const activityQuery = query(
         collectionGroup(db, "walletActivity"),
         where("userId", "==", user.uid),
