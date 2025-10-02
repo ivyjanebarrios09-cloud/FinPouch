@@ -7,7 +7,6 @@ import {
   collection,
   query,
   onSnapshot,
-  orderBy,
   collectionGroup,
   where,
 } from "firebase/firestore";
@@ -66,8 +65,7 @@ export function DashboardClient() {
     setLoading(true);
 
     const deviceQuery = query(
-      collection(db, "users", user.uid, "devices"),
-      orderBy("createdAt", "desc")
+      collection(db, "users", user.uid, "devices")
     );
 
     const unsubscribeDevices = onSnapshot(deviceQuery, (querySnapshot) => {
@@ -80,8 +78,7 @@ export function DashboardClient() {
 
     const activityQuery = query(
       collectionGroup(db, "walletActivity"),
-      where("userId", "==", user.uid),
-      orderBy("timestamp", "desc")
+      where("userId", "==", user.uid)
     );
 
     const unsubscribeActivities = onSnapshot(activityQuery, (querySnapshot) => {
@@ -92,6 +89,10 @@ export function DashboardClient() {
           activitiesData.push({ id: doc.id, ...data } as WalletActivity);
         }
       });
+      
+      // Sort activities on the client side
+      activitiesData.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
+
       setActivities(activitiesData);
       setLoading(false);
     });
