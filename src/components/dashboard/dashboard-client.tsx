@@ -76,14 +76,14 @@ export function DashboardClient() {
       });
       setDevices(devicesData);
 
-      const activityUnsubscribers: Unsubscribe[] = [];
-      let allActivities: WalletActivity[] = [];
-
       if (devicesData.length === 0) {
         setActivities([]);
         setLoading(false);
         return;
       }
+
+      let allActivities: WalletActivity[] = [];
+      const activityUnsubscribers: Unsubscribe[] = [];
 
       devicesData.forEach((device) => {
         const activityQuery = query(
@@ -104,10 +104,10 @@ export function DashboardClient() {
               } as WalletActivity);
             }
           });
-
+          
           allActivities.sort((a, b) => {
             if (a.timestamp && b.timestamp) {
-              return b.timestamp.toMillis() - a.timestamp.toMillis();
+              return b.timestamp - a.timestamp;
             }
             return 0;
           });
@@ -135,14 +135,14 @@ export function DashboardClient() {
   const opensToday = useMemo(() => {
     const todayStart = startOfToday();
     return activities.filter(
-      (activity) => activity.timestamp && activity.timestamp.toDate() >= todayStart
+      (activity) => activity.timestamp && new Date(activity.timestamp) >= todayStart
     ).length;
   }, [activities]);
 
   const weeklyActivities = useMemo(() => {
     const oneWeekAgo = subDays(new Date(), 7);
     return activities.filter(
-      (activity) => activity.timestamp && activity.timestamp.toDate() > oneWeekAgo
+      (activity) => activity.timestamp && new Date(activity.timestamp) > oneWeekAgo
     );
   }, [activities]);
 

@@ -30,7 +30,6 @@ export function RecordsClient() {
 
     setLoading(true);
 
-    // 1. Get the user's devices
     const devicesQuery = query(collection(db, "users", user.uid, "devices"));
     const unsubscribeDevices = onSnapshot(devicesQuery, (devicesSnapshot) => {
         const devicesData: Device[] = [];
@@ -38,29 +37,24 @@ export function RecordsClient() {
             devicesData.push({ id: doc.id, ...doc.data() } as Device);
         });
 
-        let allActivities: WalletActivity[] = [];
-        const activityUnsubscribers: Unsubscribe[] = [];
-
         if (devicesData.length === 0) {
             setActivities([]);
             setLoading(false);
             return;
         }
 
-        let devicesProcessed = 0;
+        let allActivities: WalletActivity[] = [];
+        const activityUnsubscribers: Unsubscribe[] = [];
 
-        // 2. For each device, get its walletActivity
         devicesData.forEach((device) => {
             const activityQuery = query(
                 collection(db, "users", user.uid, "devices", device.id, "walletActivity")
             );
             const unsubscribeActivities = onSnapshot(activityQuery, (activitySnapshot) => {
-                // Filter out old activities from this device to replace with new snapshot
                 allActivities = allActivities.filter(act => act.deviceId !== device.id);
 
                 activitySnapshot.forEach((doc) => {
                     const data = doc.data();
-                    // Ensure timestamp exists before pushing
                     if (data.timestamp) {
                         allActivities.push({
                             id: doc.id,
@@ -71,27 +65,24 @@ export function RecordsClient() {
                     }
                 });
 
-                // Sort all activities together after updating
                 allActivities.sort((a, b) => {
                     if (a.timestamp && b.timestamp) {
-                        return b.timestamp.toMillis() - a.timestamp.toMillis();
+                        return b.timestamp - a.timestamp;
                     }
                     return 0;
                 });
-                setActivities([...allActivities].slice(0, 50)); // Apply limit client-side
+                setActivities([...allActivities].slice(0, 50));
             });
             activityUnsubscribers.push(unsubscribeActivities);
         });
         
         setLoading(false);
 
-        // This function is returned for cleanup
         return () => {
             activityUnsubscribers.forEach(unsub => unsub());
         };
     });
 
-    // Cleanup device listener
     return () => {
         unsubscribeDevices();
     };
@@ -121,7 +112,7 @@ export function RecordsClient() {
                     activities.length > 0 ? activities.map((activity) => (
                         <TableRow key={activity.id}>
                             <TableCell className="font-medium">
-                            {activity.timestamp ? format(activity.timestamp.toDate(), "MMM d, yyyy 'at' h:mm a") : "Invalid Date"}
+                            {activity.timestamp ? format(new Date(activity.timestamp), "MMM d, yyyy 'at' h:mm a") : "Invalid Date"}
                             </TableCell>
                             <TableCell>{activity.deviceName || activity.deviceId || 'General'}</TableCell>
                         </TableRow>

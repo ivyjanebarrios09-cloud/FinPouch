@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, query, onSnapshot, orderBy, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, query, onSnapshot, orderBy } from "firebase/firestore";
 import type { Device } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,7 +84,7 @@ export function DevicesClient() {
         deviceId: values.deviceId,
         name: values.name,
         userId: user.uid,
-        createdAt: serverTimestamp(),
+        createdAt: Date.now(),
       });
       toast({
         title: "Success",
@@ -182,7 +182,7 @@ export function DevicesClient() {
                                 <TableCell className="font-medium">{device.name}</TableCell>
                                 <TableCell>{device.deviceId}</TableCell>
                                 <TableCell>
-                                    {device.createdAt ? format(device.createdAt.toDate(), "MMM d, yyyy") : 'N/A'}
+                                    {device.createdAt ? format(new Date(device.createdAt), "MMM d, yyyy") : 'N/A'}
                                 </TableCell>
                             </TableRow>
                         )) : (

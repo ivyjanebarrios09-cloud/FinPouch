@@ -20,7 +20,7 @@ export function ActivityByHourChart({ activities, isLoading }: ActivityChartProp
 
         activities.forEach(activity => {
             if (activity.timestamp) {
-              const hour = activity.timestamp.toDate().getHours();
+              const hour = new Date(activity.timestamp).getHours();
               hourCounts[hour].opens++;
             }
         });
@@ -91,7 +91,7 @@ export function ActivityByDayChart({ activities, isLoading }: ActivityChartProps
 
     activities.forEach(activity => {
       if (activity.timestamp) {
-        const activityDateStr = format(startOfDay(activity.timestamp.toDate()), "MMM d");
+        const activityDateStr = format(startOfDay(new Date(activity.timestamp)), "MMM d");
         if (dayNameMap[activityDateStr]) {
             dayNameMap[activityDateStr].opens++;
         }
@@ -159,7 +159,7 @@ export function ActivityByMonthChart({ activities, isLoading }: ActivityChartPro
 
     activities.forEach(activity => {
       if (activity.timestamp) {
-        const activityMonthStr = format(startOfMonth(activity.timestamp.toDate()), "MMM yyyy");
+        const activityMonthStr = format(startOfMonth(new Date(activity.timestamp)), "MMM yyyy");
         if (monthNameMap[activityMonthStr]) {
             monthNameMap[activityMonthStr].opens++;
         }
@@ -225,7 +225,7 @@ export function ActivityDoughnutChart({ activities, isLoading }: ActivityChartPr
 
     activities.forEach(activity => {
       if (activity.timestamp) {
-        const hour = activity.timestamp.toDate().getHours();
+        const hour = new Date(activity.timestamp).getHours();
         hourCounts[hour].opens++;
       }
     });
