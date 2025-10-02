@@ -1,10 +1,68 @@
-
+/**
+ * @file Firestore Security Rules
+ * @core Philosophy: This ruleset enforces a strict user-ownership model. Users can only access data associated with their own user ID.
+ * @data Structure: Data is nested under /users/{userId}, with devices and wallet activity stored as subcollections.
+ * @key Security Decisions:
+ *   - Users can only read and write their own data.
+ *   - Listing of user devices and wallet activity is allowed only for the owner.
+ *   - Schema validation is relaxed in prototyping mode to allow rapid iteration.
+ * @denormalization Wallet activity documents contain the userId to avoid needing to query the /users collection for authorization. Device documents also contain userId to avoid needing to query the /users collection.
+ */
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{userId}/{documents=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+    /**
+     * @description Allows users to manage their own devices.
+     * @path /users/{userId}/devices/{deviceId}
+     * @allow (create) User m7vOAnCxzVWa1CX31Z2t933elDU2 creates a device with deviceId matching the document id and userId matching m7vOAnCxzVWa1CX31Z2t933elDU2.
+     * @allow (get) User m7vOAnCxzVWa1CX31Z2t933elDU2 retrieves their device.
+     * @allow (list) User m7vOAnCxzVWa1CX31Z2t933elDU2 lists their devices.
+     * @allow (update) User m7vOAnCxzVWa1CX31Z2t933elDU2 updates their device.
+     * @allow (delete) User m7vOAnCxzVWa1CX31Z2t933elDU2 deletes their device.
+     * @deny (create) User l9j0aMzKlRP6ea0v5Rj9as7j3LK2 tries to create a device for user m7vOAnCxzVWa1CX31Z2t933elDU2.
+     * @deny (get) User l9j0aMzKlRP6ea0v5Rj9as7j3LK2 tries to retrieve user m7vOAnCxzVWa1CX31Z2t933elDU2's device.
+     * @principle Enforces document ownership for all operations on devices.
+     */
+    match /users/{userId}/devices/{deviceId} {
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId && request.resource.data.deviceId == deviceId;
+      allow update: if isSignedIn() && isExistingOwner(userId) && resource.data.userId == userId && resource.data.deviceId == deviceId;
+      allow delete: if isSignedIn() && isExistingOwner(userId);
+    }
+
+    /**
+     * @description Allows users to manage their wallet activity.
+     * @path /users/{userId}/devices/{deviceId}/walletActivity/{activityId}
+     * @allow (create) User m7vOAnCxzVWa1CX31Z2t933elDU2 creates wallet activity with userId matching m7vOAnCxzVWa1CX31Z2t933elDU2.
+     * @allow (get) User m7vOAnCxzVWa1CX31Z2t933elDU2 retrieves their wallet activity.
+     * @allow (list) User m7vOAnCxzVWa1CX31Z2t933elDU2 lists their wallet activity.
+     * @allow (update) User m7vOAnCxzVWa1CX31Z2t933elDU2 updates their wallet activity.
+     * @allow (delete) User m7vOAnCxzVWa1CX31Z2t933elDU2 deletes their wallet activity.
+     * @deny (create) User l9j0aMzKlRP6ea0v5Rj9as7j3LK2 tries to create wallet activity for user m7vOAnCxzVWa1CX31Z2t933elDU2.
+     * @deny (get) User l9j0aMzKlRP6ea0v5Rj9as7j3LK2 tries to retrieve user m7vOAnCxzVWa1CX31Z2t933elDU2's wallet activity.
+     * @principle Enforces document ownership for all operations on wallet activity.
+     */
+    match /users/{userId}/devices/{deviceId}/walletActivity/{activityId} {
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isSignedIn() && isExistingOwner(userId) && resource.data.userId == userId;
+      allow delete: if isSignedIn() && isExistingOwner(userId);
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isExistingOwner(userId) {
+        return isSignedIn() && isOwner(userId) && resource != null;
     }
   }
 }
