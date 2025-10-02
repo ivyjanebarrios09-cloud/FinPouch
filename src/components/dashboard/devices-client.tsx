@@ -110,6 +110,10 @@ export function DevicesClient() {
       </TableRow>
     ));
   };
+  
+  const isValidDate = (timestamp: any) => {
+    return timestamp && !isNaN(new Date(timestamp).getTime());
+  }
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
@@ -182,7 +186,7 @@ export function DevicesClient() {
                                 <TableCell className="font-medium">{device.name}</TableCell>
                                 <TableCell>{device.deviceId}</TableCell>
                                 <TableCell>
-                                    {device.createdAt ? format(new Date(device.createdAt), "MMM d, yyyy") : 'N/A'}
+                                    {isValidDate(device.createdAt) ? format(new Date(device.createdAt), "MMM d, yyyy") : 'N/A'}
                                 </TableCell>
                             </TableRow>
                         )) : (

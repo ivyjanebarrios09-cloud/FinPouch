@@ -31,6 +31,7 @@ export function RecordsClient() {
     setLoading(true);
 
     const devicesQuery = query(collection(db, "users", user.uid, "devices"));
+    
     const unsubscribeDevices = onSnapshot(devicesQuery, (devicesSnapshot) => {
         const devicesData: Device[] = [];
         devicesSnapshot.forEach((doc) => {
@@ -46,11 +47,16 @@ export function RecordsClient() {
         let allActivities: WalletActivity[] = [];
         const activityUnsubscribers: Unsubscribe[] = [];
 
+        const deviceCount = devicesData.length;
+        let processedDevices = 0;
+
         devicesData.forEach((device) => {
             const activityQuery = query(
                 collection(db, "users", user.uid, "devices", device.id, "walletActivity")
             );
+            
             const unsubscribeActivities = onSnapshot(activityQuery, (activitySnapshot) => {
+                // Remove old activities for this device to prevent duplication
                 allActivities = allActivities.filter(act => act.deviceId !== device.id);
 
                 activitySnapshot.forEach((doc) => {
@@ -65,6 +71,7 @@ export function RecordsClient() {
                     }
                 });
 
+                // Since snapshots can come in any order, we sort every time.
                 allActivities.sort((a, b) => {
                     if (a.timestamp && b.timestamp) {
                         return b.timestamp - a.timestamp;
@@ -75,9 +82,14 @@ export function RecordsClient() {
             });
             activityUnsubscribers.push(unsubscribeActivities);
         });
-        
-        setLoading(false);
 
+        if (devicesData.length > 0) {
+             const timer = setTimeout(() => setLoading(false), 1000); // Give a little time for initial data
+             return () => clearTimeout(timer);
+        } else {
+            setLoading(false);
+        }
+        
         return () => {
             activityUnsubscribers.forEach(unsub => unsub());
         };
@@ -96,6 +108,10 @@ export function RecordsClient() {
       </TableRow>
     ));
   };
+  
+  const isValidDate = (timestamp: any) => {
+    return timestamp && !isNaN(new Date(timestamp).getTime());
+  }
 
   return (
     <Card>
@@ -112,7 +128,7 @@ export function RecordsClient() {
                     activities.length > 0 ? activities.map((activity) => (
                         <TableRow key={activity.id}>
                             <TableCell className="font-medium">
-                            {activity.timestamp ? format(new Date(activity.timestamp), "MMM d, yyyy 'at' h:mm a") : "Invalid Date"}
+                            {isValidDate(activity.timestamp) ? format(new Date(activity.timestamp), "MMM d, yyyy 'at' h:mm a") : "Invalid Date"}
                             </TableCell>
                             <TableCell>{activity.deviceName || activity.deviceId || 'General'}</TableCell>
                         </TableRow>
