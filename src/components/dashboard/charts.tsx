@@ -21,7 +21,9 @@ export function ActivityByHourChart({ activities, isLoading }: ActivityChartProp
         activities.forEach(activity => {
             if (activity.timestamp) {
               const hour = new Date(activity.timestamp).getHours();
-              hourCounts[hour].opens++;
+              if (hourCounts[hour]) {
+                hourCounts[hour].opens++;
+              }
             }
         });
         return hourCounts;
@@ -226,7 +228,9 @@ export function ActivityDoughnutChart({ activities, isLoading }: ActivityChartPr
     activities.forEach(activity => {
       if (activity.timestamp) {
         const hour = new Date(activity.timestamp).getHours();
-        hourCounts[hour].opens++;
+        if (hourCounts[hour]) {
+            hourCounts[hour].opens++;
+        }
       }
     });
     
