@@ -1,68 +1,75 @@
-/**
- * @file Firestore Security Rules
- * @core Philosophy: This ruleset enforces a strict user-ownership model. Users can only access data associated with their own user ID.
- * @data Structure: Data is nested under /users/{userId}, with devices and wallet activity stored as subcollections.
- * @key Security Decisions:
- *   - Users can only read and write their own data.
- *   - Listing of user devices and wallet activity is allowed only for the owner.
- *   - Schema validation is relaxed in prototyping mode to allow rapid iteration.
- * @denormalization Wallet activity documents contain the userId to avoid needing to query the /users collection for authorization. Device documents also contain userId to avoid needing to query the /users collection.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
     /**
-     * @description Allows users to manage their own devices.
-     * @path /users/{userId}/devices/{deviceId}
-     * @allow (create) User m7vOAnCxzVWa1CX31Z2t933elDU2 creates a device with deviceId matching the document id and userId matching m7vOAnCxzVWa1CX31Z2t933elDU2.
-     * @allow (get) User m7vOAnCxzVWa1CX31Z2t933elDU2 retrieves their device.
-     * @allow (list) User m7vOAnCxzVWa1CX31Z2t933elDU2 lists their devices.
-     * @allow (update) User m7vOAnCxzVWa1CX31Z2t933elDU2 updates their device.
-     * @allow (delete) User m7vOAnCxzVWa1CX31Z2t933elDU2 deletes their device.
-     * @deny (create) User l9j0aMzKlRP6ea0v5Rj9as7j3LK2 tries to create a device for user m7vOAnCxzVWa1CX31Z2t933elDU2.
-     * @deny (get) User l9j0aMzKlRP6ea0v5Rj9as7j3LK2 tries to retrieve user m7vOAnCxzVWa1CX31Z2t933elDU2's device.
-     * @principle Enforces document ownership for all operations on devices.
+     * @description This ruleset enforces a strict user-ownership model for device registration and wallet activity.
+     * All data is nested under /users/{userId}/devices/{deviceId}, ensuring data isolation.
+     * Key Security Decisions:
+     *   - Users can only manage their own devices and view their own wallet activity.
+     *   - Listing of devices and wallet activity is allowed only for the owning user.
+     *   - Device and wallet activity data shape is not strictly validated to allow for rapid iteration.
+     * Denormalization for Authorization:
+     *   - The userId field within the device and walletActivity documents is used to validate ownership against the path.
+     * Structural Segregation:
+     *   - All device and wallet activity data is private and stored under user-specific paths.
      */
-    match /users/{userId}/devices/{deviceId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId && request.resource.data.deviceId == deviceId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && resource.data.userId == userId && resource.data.deviceId == deviceId;
-      allow delete: if isSignedIn() && isExistingOwner(userId);
-    }
 
-    /**
-     * @description Allows users to manage their wallet activity.
-     * @path /users/{userId}/devices/{deviceId}/walletActivity/{activityId}
-     * @allow (create) User m7vOAnCxzVWa1CX31Z2t933elDU2 creates wallet activity with userId matching m7vOAnCxzVWa1CX31Z2t933elDU2.
-     * @allow (get) User m7vOAnCxzVWa1CX31Z2t933elDU2 retrieves their wallet activity.
-     * @allow (list) User m7vOAnCxzVWa1CX31Z2t933elDU2 lists their wallet activity.
-     * @allow (update) User m7vOAnCxzVWa1CX31Z2t933elDU2 updates their wallet activity.
-     * @allow (delete) User m7vOAnCxzVWa1CX31Z2t933elDU2 deletes their wallet activity.
-     * @deny (create) User l9j0aMzKlRP6ea0v5Rj9as7j3LK2 tries to create wallet activity for user m7vOAnCxzVWa1CX31Z2t933elDU2.
-     * @deny (get) User l9j0aMzKlRP6ea0v5Rj9as7j3LK2 tries to retrieve user m7vOAnCxzVWa1CX31Z2t933elDU2's wallet activity.
-     * @principle Enforces document ownership for all operations on wallet activity.
-     */
-    match /users/{userId}/devices/{deviceId}/walletActivity/{activityId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && resource.data.userId == userId;
-      allow delete: if isSignedIn() && isExistingOwner(userId);
-    }
-
-    // Helper functions
     function isSignedIn() {
       return request.auth != null;
     }
 
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return isSignedIn() && request.auth.uid == userId;
     }
 
     function isExistingOwner(userId) {
-        return isSignedIn() && isOwner(userId) && resource != null;
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Manages device documents registered by a user.
+     * @path /users/{userId}/devices/{deviceId}
+     * @allow (create) - User 'user123' can create a device with deviceId 'device456' under their user ID if request.auth.uid == 'user123' and request.resource.data.userId == 'user123'.
+     * @allow (get) - User 'user123' can read device 'device456' under their user ID if request.auth.uid == 'user123'.
+     * @allow (list) - User 'user123' can list devices under their user ID if request.auth.uid == 'user123'.
+     * @allow (update) - User 'user123' can update device 'device456' under their user ID if request.auth.uid == 'user123'.
+     * @allow (delete) - User 'user123' can delete device 'device456' under their user ID if request.auth.uid == 'user123'.
+     * @deny (create) - User 'user456' cannot create a device under user ID 'user123'.
+     * @deny (get) - User 'user456' cannot read device 'device456' under user ID 'user123'.
+     * @deny (list) - User 'user456' cannot list devices under user ID 'user123'.
+     * @deny (update) - User 'user456' cannot update device 'device456' under user ID 'user123'.
+     * @deny (delete) - User 'user456' cannot delete device 'device456' under user ID 'user123'.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId}/devices/{deviceId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId && request.resource.data.deviceId == deviceId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId && request.resource.data.deviceId == resource.data.deviceId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Manages wallet activity records for a specific device.
+     * @path /users/{userId}/devices/{deviceId}/walletActivity/{activityId}
+     * @allow (create) - User 'user123' can create a wallet activity record under device 'device456' if request.auth.uid == 'user123' and request.resource.data.userId == 'user123'.
+     * @allow (get) - User 'user123' can read wallet activity record 'activity789' under device 'device456' if request.auth.uid == 'user123'.
+     * @allow (list) - User 'user123' can list wallet activity records under device 'device456' if request.auth.uid == 'user123'.
+     * @allow (update) - User 'user123' can update wallet activity record 'activity789' under device 'device456' if request.auth.uid == 'user123'.
+     * @allow (delete) - User 'user123' can delete wallet activity record 'activity789' under device 'device456' if request.auth.uid == 'user123'.
+     * @deny (create) - User 'user456' cannot create a wallet activity record under device 'device456' and user ID 'user123'.
+     * @deny (get) - User 'user456' cannot read wallet activity record 'activity789' under device 'device456' and user ID 'user123'.
+     * @deny (list) - User 'user456' cannot list wallet activity records under device 'device456' and user ID 'user123'.
+     * @deny (update) - User 'user456' cannot update wallet activity record 'activity789' under device 'device456' and user ID 'user123'.
+     * @deny (delete) - User 'user456' cannot delete wallet activity record 'activity789' under device 'device456' and user ID 'user123'.
+     * @principle Enforces document ownership for all operations, inherited from the parent device document.
+     */
+    match /users/{userId}/devices/{deviceId}/walletActivity/{activityId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == userId;
+      allow delete: if isExistingOwner(userId);
     }
   }
 }
