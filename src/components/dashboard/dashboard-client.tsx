@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ActivityByHourChart, ActivityByDayChart, ActivityByMonthChart, ActivityDoughnutChart } from "./charts";
+import { ActivityByHourChart, ActivityDoughnutChart } from "./charts";
 import { AiAdvice } from "./ai-advice";
 import { subDays, startOfToday } from "date-fns";
 
@@ -46,18 +46,17 @@ export function DashboardClient() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    };
 
     setLoading(true);
+
     const activityQuery = query(
       collection(db, "users", user.uid, "walletActivity"),
       orderBy("timestamp", "desc")
     );
-    const deviceQuery = query(
-        collection(db, "users", user.uid, "devices"),
-        orderBy("createdAt", "desc")
-    );
-
     const unsubscribeActivities = onSnapshot(activityQuery, (querySnapshot) => {
       const activitiesData: WalletActivity[] = [];
       querySnapshot.forEach((doc) => {
@@ -70,6 +69,10 @@ export function DashboardClient() {
       setLoading(false);
     });
     
+    const deviceQuery = query(
+        collection(db, "users", user.uid, "devices"),
+        orderBy("createdAt", "desc")
+    );
     const unsubscribeDevices = onSnapshot(deviceQuery, (querySnapshot) => {
         const devicesData: Device[] = [];
         querySnapshot.forEach((doc) => {
@@ -106,7 +109,8 @@ export function DashboardClient() {
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight font-headline">Dashboard</h2>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <StatCard title="Total Wallet Opens" value={totalOpens} icon={ShoppingCart} isLoading={loading} />
         <StatCard title="Wallet Opens Today" value={opensToday} icon={CalendarDays} isLoading={loading} />
         <StatCard title="Registered Devices" value={totalDevices} icon={Smartphone} isLoading={loading} />
@@ -116,55 +120,33 @@ export function DashboardClient() {
         <Card className="col-span-4">
           <CardHeader>
             <CardTitle>Wallet Opens by Hour</CardTitle>
-             <CardDescription>
+            <CardDescription>
               An hourly breakdown of your wallet opening habits.
             </CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
-            <ActivityByHourChart activities={activities} isLoading={loading}/>
+            <ActivityByHourChart activities={activities} isLoading={loading} />
           </CardContent>
         </Card>
-        <div className="col-span-4 md:col-span-3 space-y-4">
-             <AiAdvice walletOpens={totalOpens} />
-             <Card>
-                <CardHeader>
-                    <CardTitle>Weekly Peak Activity</CardTitle>
-                    <CardDescription>
-                        A distribution of your wallet opens by hour this week.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <ActivityDoughnutChart activities={weeklyActivities} isLoading={loading} />
-                </CardContent>
-             </Card>
-        </div>
-      </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
-         <Card>
-          <CardHeader>
-            <CardTitle>Daily Wallet Opens (Last 7 Days)</CardTitle>
-            <CardDescription>
-              A look at your wallet opening frequency over the past week.
-            </CardDescription>
-          </Header>
-          <CardContent className="pl-2">
-            <ActivityByDayChart activities={activities} isLoading={loading}/>
-          </CardContent>
-        </Card>
-      </div>
-       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
-         <Card>
-          <CardHeader>
-            <CardTitle>Monthly Wallet Opens (Last 12 Months)</CardTitle>
-            <CardDescription>
-              A look at your wallet opening frequency over the past year.
-            </CardDescription>
-          </Header>
-          <CardContent className="pl-2">
-            <ActivityByMonthChart activities={activities} isLoading={loading}/>
-          </CardContent>
-        </Card>
+        <div className="col-span-4 md:col-span-3 space-y-4">
+          <AiAdvice walletOpens={totalOpens} />
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Weekly Peak Activity</CardTitle>
+              <CardDescription>
+                A distribution of your wallet opens by hour this week.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ActivityDoughnutChart
+                activities={weeklyActivities}
+                isLoading={loading}
+              />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </>
   );
