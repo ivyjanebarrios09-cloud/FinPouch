@@ -7,8 +7,8 @@ import {
   collection,
   query,
   onSnapshot,
-  collectionGroup,
   where,
+  Unsubscribe,
 } from "firebase/firestore";
 import type { WalletActivity, Device } from "@/lib/types";
 import {
@@ -63,43 +63,73 @@ export function DashboardClient() {
     }
 
     setLoading(true);
-
+    
+    // 1. Get the user's devices
     const deviceQuery = query(
       collection(db, "users", user.uid, "devices")
     );
 
-    const unsubscribeDevices = onSnapshot(deviceQuery, (querySnapshot) => {
+    const unsubscribeDevices = onSnapshot(deviceQuery, (deviceSnapshot) => {
       const devicesData: Device[] = [];
-      querySnapshot.forEach((doc) => {
+      deviceSnapshot.forEach((doc) => {
         devicesData.push({ id: doc.id, ...doc.data() } as Device);
       });
       setDevices(devicesData);
-    });
 
-    const activityQuery = query(
-      collectionGroup(db, "walletActivity"),
-      where("userId", "==", user.uid)
-    );
+      let activityUnsubscribers: Unsubscribe[] = [];
+      let allActivities: WalletActivity[] = [];
+      
+      if (devicesData.length === 0) {
+        setActivities([]);
+        setLoading(false);
+        return;
+      }
 
-    const unsubscribeActivities = onSnapshot(activityQuery, (querySnapshot) => {
-      const activitiesData: WalletActivity[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.timestamp) {
-          activitiesData.push({ id: doc.id, ...data } as WalletActivity);
+      let devicesProcessed = 0;
+
+      // 2. For each device, get its walletActivity
+      devicesData.forEach((device) => {
+        const activityQuery = query(
+            collection(db, "users", user.uid, "devices", device.id, "walletActivity")
+        );
+        const unsubscribeActivities = onSnapshot(activityQuery, (activitySnapshot) => {
+            
+            // Filter out old activities from this device to replace with new snapshot
+            allActivities = allActivities.filter(act => act.deviceId !== device.id);
+
+            activitySnapshot.forEach((doc) => {
+                const data = doc.data();
+                if (data.timestamp) {
+                  allActivities.push({ 
+                      id: doc.id, 
+                      ...data,
+                      deviceId: device.id,
+                    } as WalletActivity);
+                }
+            });
+
+            // Sort all activities together after updating
+            allActivities.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
+            setActivities([...allActivities]);
+        });
+        
+        activityUnsubscribers.push(unsubscribeActivities);
+
+        devicesProcessed++;
+        if (devicesProcessed === devicesData.length) {
+            setLoading(false);
         }
       });
       
-      // Sort activities on the client side
-      activitiesData.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
-
-      setActivities(activitiesData);
-      setLoading(false);
+      // Cleanup device listeners and all activity listeners
+      return () => {
+        activityUnsubscribers.forEach(unsub => unsub());
+      };
     });
 
+    // Cleanup device listener
     return () => {
       unsubscribeDevices();
-      unsubscribeActivities();
     };
   }, [user]);
 

@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
-import { collectionGroup, query, onSnapshot, limit, where } from "firebase/firestore";
-import type { WalletActivity } from "@/lib/types";
+import { collection, query, onSnapshot, Unsubscribe } from "firebase/firestore";
+import type { WalletActivity, Device } from "@/lib/types";
 import { format } from "date-fns";
 import {
   Table,
@@ -29,29 +29,69 @@ export function RecordsClient() {
     };
 
     setLoading(true);
-    const q = query(
-      collectionGroup(db, "walletActivity"),
-      where("userId", "==", user.uid),
-      limit(50)
-    );
+    
+    // 1. Get the user's devices
+    const deviceQuery = query(collection(db, "users", user.uid, "devices"));
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const activitiesData: WalletActivity[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.timestamp) { // Ensure record is not partial
-          activitiesData.push({ id: doc.id, ...data } as WalletActivity);
+    const unsubscribeDevices = onSnapshot(deviceQuery, (deviceSnapshot) => {
+        const devicesData: Device[] = [];
+        deviceSnapshot.forEach(doc => {
+            devicesData.push({ id: doc.id, ...doc.data() } as Device);
+        });
+
+        let activityUnsubscribers: Unsubscribe[] = [];
+        let allActivities: WalletActivity[] = [];
+
+        if (devicesData.length === 0) {
+            setActivities([]);
+            setLoading(false);
+            return;
         }
-      });
-      
-      // Sort activities on the client side
-      activitiesData.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
 
-      setActivities(activitiesData);
-      setLoading(false);
+        let devicesProcessed = 0;
+
+        // 2. For each device, get its walletActivity
+        devicesData.forEach((device) => {
+            const activityQuery = query(
+                collection(db, "users", user.uid, "devices", device.id, "walletActivity")
+            );
+            const unsubscribeActivities = onSnapshot(activityQuery, (activitySnapshot) => {
+                // Filter out old activities from this device to replace with new snapshot
+                allActivities = allActivities.filter(act => act.deviceId !== device.id);
+
+                activitySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    if (data.timestamp) {
+                        allActivities.push({
+                            id: doc.id,
+                            ...data,
+                            deviceId: device.id,
+                            deviceName: device.name,
+                        } as WalletActivity);
+                    }
+                });
+
+                // Sort all activities together after updating
+                allActivities.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
+                setActivities([...allActivities].slice(0, 50)); // Apply limit client-side
+            });
+            activityUnsubscribers.push(unsubscribeActivities);
+
+            devicesProcessed++;
+            if (devicesProcessed === devicesData.length) {
+                setLoading(false);
+            }
+        });
+
+        return () => {
+            activityUnsubscribers.forEach(unsub => unsub());
+        };
     });
 
-    return () => unsubscribe();
+    return () => {
+        unsubscribeDevices();
+    };
+
   }, [user]);
 
   const renderLoadingRows = () => {
