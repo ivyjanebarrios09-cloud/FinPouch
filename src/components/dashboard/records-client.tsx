@@ -61,6 +61,7 @@ export function RecordsClient() {
 
                 activitySnapshot.forEach((doc) => {
                     const data = doc.data();
+                    // Ensure timestamp exists before pushing
                     if (data.timestamp) {
                         allActivities.push({
                             id: doc.id,
@@ -72,7 +73,12 @@ export function RecordsClient() {
                 });
 
                 // Sort all activities together after updating
-                allActivities.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
+                allActivities.sort((a, b) => {
+                    if (a.timestamp && b.timestamp) {
+                        return b.timestamp.toMillis() - a.timestamp.toMillis();
+                    }
+                    return 0;
+                });
                 setActivities([...allActivities].slice(0, 50)); // Apply limit client-side
             });
             activityUnsubscribers.push(unsubscribeActivities);
@@ -83,11 +89,13 @@ export function RecordsClient() {
             }
         });
 
+        // This function is returned for cleanup
         return () => {
             activityUnsubscribers.forEach(unsub => unsub());
         };
     });
 
+    // Cleanup device listener
     return () => {
         unsubscribeDevices();
     };
@@ -118,7 +126,7 @@ export function RecordsClient() {
                     activities.length > 0 ? activities.map((activity) => (
                         <TableRow key={activity.id}>
                             <TableCell className="font-medium">
-                            {format(activity.timestamp.toDate(), "MMM d, yyyy 'at' h:mm a")}
+                            {activity.timestamp ? format(activity.timestamp.toDate(), "MMM d, yyyy 'at' h:mm a") : "Invalid Date"}
                             </TableCell>
                             <TableCell>{activity.deviceName || activity.deviceId || 'General'}</TableCell>
                         </TableRow>

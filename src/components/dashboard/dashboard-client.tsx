@@ -7,7 +7,6 @@ import {
   collection,
   query,
   onSnapshot,
-  where,
   Unsubscribe,
 } from "firebase/firestore";
 import type { WalletActivity, Device } from "@/lib/types";
@@ -99,6 +98,7 @@ export function DashboardClient() {
 
             activitySnapshot.forEach((doc) => {
                 const data = doc.data();
+                // Ensure timestamp exists before pushing
                 if (data.timestamp) {
                   allActivities.push({ 
                       id: doc.id, 
@@ -109,7 +109,12 @@ export function DashboardClient() {
             });
 
             // Sort all activities together after updating
-            allActivities.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
+            allActivities.sort((a, b) => {
+                if (a.timestamp && b.timestamp) {
+                    return b.timestamp.toMillis() - a.timestamp.toMillis();
+                }
+                return 0;
+            });
             setActivities([...allActivities]);
         });
         
@@ -121,7 +126,7 @@ export function DashboardClient() {
         }
       });
       
-      // Cleanup device listeners and all activity listeners
+      // This function is returned for cleanup
       return () => {
         activityUnsubscribers.forEach(unsub => unsub());
       };
