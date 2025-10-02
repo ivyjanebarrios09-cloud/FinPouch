@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useMemo } from "react"
@@ -5,6 +6,7 @@ import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianG
 import type { WalletActivity } from "@/lib/types"
 import { Skeleton } from "@/components/ui/skeleton"
 import { format, subDays, startOfDay, subMonths, startOfMonth } from 'date-fns'
+import { parseCustomTimestamp } from "@/lib/utils"
 
 interface ActivityChartProps {
   activities: WalletActivity[];
@@ -20,9 +22,12 @@ export function ActivityByHourChart({ activities, isLoading }: ActivityChartProp
 
         activities.forEach(activity => {
             if (activity.timestamp) {
-              const hour = new Date(activity.timestamp).getHours();
-              if (hourCounts[hour]) {
-                hourCounts[hour].opens++;
+              const date = parseCustomTimestamp(activity.timestamp);
+              if (date) {
+                const hour = date.getHours();
+                if (hourCounts[hour]) {
+                  hourCounts[hour].opens++;
+                }
               }
             }
         });
@@ -93,9 +98,12 @@ export function ActivityByDayChart({ activities, isLoading }: ActivityChartProps
 
     activities.forEach(activity => {
       if (activity.timestamp) {
-        const activityDateStr = format(startOfDay(new Date(activity.timestamp)), "MMM d");
-        if (dayNameMap[activityDateStr]) {
-            dayNameMap[activityDateStr].opens++;
+        const activityDate = parseCustomTimestamp(activity.timestamp);
+        if (activityDate) {
+          const activityDateStr = format(startOfDay(activityDate), "MMM d");
+          if (dayNameMap[activityDateStr]) {
+              dayNameMap[activityDateStr].opens++;
+          }
         }
       }
     });
@@ -161,9 +169,12 @@ export function ActivityByMonthChart({ activities, isLoading }: ActivityChartPro
 
     activities.forEach(activity => {
       if (activity.timestamp) {
-        const activityMonthStr = format(startOfMonth(new Date(activity.timestamp)), "MMM yyyy");
-        if (monthNameMap[activityMonthStr]) {
-            monthNameMap[activityMonthStr].opens++;
+        const activityDate = parseCustomTimestamp(activity.timestamp);
+        if (activityDate) {
+          const activityMonthStr = format(startOfMonth(activityDate), "MMM yyyy");
+          if (monthNameMap[activityMonthStr]) {
+              monthNameMap[activityMonthStr].opens++;
+          }
         }
       }
     });
@@ -227,9 +238,12 @@ export function ActivityDoughnutChart({ activities, isLoading }: ActivityChartPr
 
     activities.forEach(activity => {
       if (activity.timestamp) {
-        const hour = new Date(activity.timestamp).getHours();
-        if (hourCounts[hour]) {
-            hourCounts[hour].opens++;
+        const date = parseCustomTimestamp(activity.timestamp);
+        if (date) {
+            const hour = date.getHours();
+            if (hourCounts[hour]) {
+                hourCounts[hour].opens++;
+            }
         }
       }
     });
@@ -267,3 +281,5 @@ export function ActivityDoughnutChart({ activities, isLoading }: ActivityChartPr
     </div>
   );
 }
+
+    

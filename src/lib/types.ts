@@ -1,8 +1,9 @@
+
 import type { Timestamp } from "firebase/firestore";
 
 export type WalletActivity = {
   id: string;
-  timestamp: number;
+  timestamp: string; // Changed to string to match Firestore
   userId: string;
   deviceId?: string;
   deviceName?: string;
@@ -15,3 +16,5 @@ export type Device = {
     userId: string;
     createdAt: number;
 }
+
+    

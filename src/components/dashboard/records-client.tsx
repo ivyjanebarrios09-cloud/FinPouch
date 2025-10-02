@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "../ui/skeleton";
 import { Card, CardContent } from "../ui/card";
+import { parseCustomTimestamp } from "@/lib/utils";
 
 export function RecordsClient() {
   const { user } = useAuth();
@@ -73,10 +75,9 @@ export function RecordsClient() {
 
                 // Since snapshots can come in any order, we sort every time.
                 allActivities.sort((a, b) => {
-                    if (a.timestamp && b.timestamp) {
-                        return b.timestamp - a.timestamp;
-                    }
-                    return 0;
+                    const dateA = a.timestamp ? parseCustomTimestamp(a.timestamp)?.getTime() : 0;
+                    const dateB = b.timestamp ? parseCustomTimestamp(b.timestamp)?.getTime() : 0;
+                    return (dateB || 0) - (dateA || 0);
                 });
                 setActivities([...allActivities].slice(0, 50));
             });
@@ -110,7 +111,9 @@ export function RecordsClient() {
   };
   
   const isValidDate = (timestamp: any) => {
-    return timestamp && !isNaN(new Date(timestamp).getTime());
+    if (!timestamp) return false;
+    const date = parseCustomTimestamp(timestamp);
+    return date && !isNaN(date.getTime());
   }
 
   return (
@@ -119,7 +122,7 @@ export function RecordsClient() {
             <Table>
             <TableHeader>
                 <TableRow>
-                <TableHead>Date</TableHead>
+                <TableHead>Time</TableHead>
                 <TableHead>Device</TableHead>
                 </TableRow>
             </TableHeader>
@@ -128,7 +131,7 @@ export function RecordsClient() {
                     activities.length > 0 ? activities.map((activity) => (
                         <TableRow key={activity.id}>
                             <TableCell className="font-medium">
-                            {isValidDate(activity.timestamp) ? format(new Date(activity.timestamp), "MMM d, yyyy 'at' h:mm a") : "Invalid Date"}
+                            {isValidDate(activity.timestamp) ? format(parseCustomTimestamp(activity.timestamp)!, "MMM d, yyyy 'at' h:mm a") : "N/A"}
                             </TableCell>
                             <TableCell>{activity.deviceName || activity.deviceId || 'General'}</TableCell>
                         </TableRow>
@@ -146,3 +149,5 @@ export function RecordsClient() {
     </Card>
   );
 }
+
+    

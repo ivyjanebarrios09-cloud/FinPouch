@@ -2,74 +2,18 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * @description Allows users to manage their own devices.
-     * @path /users/{userId}/devices/{deviceId}
-     * @allow (create) User with uid "user123" can create a device document under /users/user123/devices/device456 if device.userId == "user123".
-     * @allow (get) User with uid "user123" can get a device document under /users/user123/devices/device456.
-     * @allow (list) User with uid "user123" can list device documents under /users/user123/devices.
-     * @allow (update) User with uid "user123" can update a device document under /users/user123/devices/device456 if the device exists and the user owns it.
-     * @allow (delete) User with uid "user123" can delete a device document under /users/user123/devices/device456 if the device exists and the user owns it.
-     * @deny (create) User with uid "user456" cannot create a device document under /users/user123/devices/device456.
-     * @deny (get) User with uid "user456" cannot get a device document under /users/user123/devices/device456.
-     * @deny (list) User with uid "user456" cannot list device documents under /users/user123/devices.
-     * @deny (update) User with uid "user456" cannot update a device document under /users/user123/devices/device456.
-     * @deny (delete) User with uid "user456" cannot delete a device document under /users/user123/devices/device456.
-     * @principle Enforces document ownership for all operations.
-     */
+    // 🔹 Devices collection (still requires authenticated user)
     match /users/{userId}/devices/{deviceId} {
-      // Helper function to check if the authenticated user is the owner of the device.
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      // Helper function to check if the authenticated user is the owner of the device and the device exists.
-      function isExistingOwner(userId, deviceId) {
-        return isOwner(userId) && exists(/databases/$(database)/documents/users/$(userId)/devices/$(deviceId));
-      }
-
-      allow get: if isOwner(userId);
-      allow list: if request.auth.uid == userId;
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId, deviceId) && request.resource.data.userId == userId;
-      allow delete: if isExistingOwner(userId, deviceId);
+      allow get, list, create, update, delete: if request.auth.uid == userId;
     }
 
-    /**
-     * @description Allows users to manage wallet activity for their devices.
-     * @path /users/{userId}/devices/{deviceId}/walletActivity/{activityId}
-     * @allow (create) User with uid "user123" can create wallet activity under /users/user123/devices/device456/walletActivity/activity789 if walletActivity.userId == "user123".
-     * @allow (get) User with uid "user123" can get wallet activity under /users/user123/devices/device456/walletActivity/activity789.
-     * @allow (list) User with uid "user123" can list wallet activity under /users/user123/devices/device456/walletActivity.
-     * @allow (update) User with uid "user123" can update wallet activity under /users/user123/devices/device456/walletActivity/activity789 if the walletActivity exists and the user owns it.
-     * @allow (delete) User with uid "user123" can delete wallet activity under /users/user123/devices/device456/walletActivity/activity789 if the walletActivity exists and the user owns it.
-     * @deny (create) User with uid "user456" cannot create wallet activity under /users/user123/devices/device456/walletActivity/activity789.
-     * @deny (get) User with uid "user456" cannot get wallet activity under /users/user123/devices/device456/walletActivity/activity789.
-     * @deny (list) User with uid "user456" cannot list wallet activity under /users/user123/devices/device456/walletActivity.
-     * @deny (update) User with uid "user456" cannot update wallet activity under /users/user123/devices/device456/walletActivity/activity789.
-     * @deny (delete) User with uid "user456" cannot delete wallet activity under /users/user123/devices/device456/walletActivity/activity789.
-     * @principle Enforces document ownership for all operations.
-     */
+    // 🔹 Wallet Activity subcollection
     match /users/{userId}/devices/{deviceId}/walletActivity/{activityId} {
-      // Helper function to check if the authenticated user is the owner of the wallet activity.
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
+      // ✅ ESP32 can create activity logs without authentication
+      allow create: if request.resource.data.keys().hasAll(['timestamp', 'reedState']);
 
-      // Helper function to check if the authenticated user is the owner of the wallet activity and the activity exists.
-      function isExistingOwner(userId, deviceId, activityId) {
-        return isOwner(userId) && exists(/databases/$(database)/documents/users/$(userId)/devices/$(deviceId)/walletActivity/$(activityId));
-      }
-
-      allow get: if isOwner(userId);
-      allow list: if request.auth.uid == userId;
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId, deviceId, activityId) && request.resource.data.userId == userId;
-      allow delete: if isExistingOwner(userId, deviceId, activityId);
+      // ✅ Only signed-in owner can read, update, or delete
+      allow get, list, update, delete: if request.auth.uid == userId;
     }
-  }
-
-  function isSignedIn() {
-    return request.auth != null;
   }
 }
