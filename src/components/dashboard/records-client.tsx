@@ -113,7 +113,7 @@ export function RecordsClient() {
   return (
     <Card className="h-[500px] flex flex-col">
         <CardHeader>
-            <CardTitle>Activity Records</CardTitle>
+            <CardTitle>TimeTrace</CardTitle>
             <CardDescription>A timeline of your recent wallet activity.</CardDescription>
         </CardHeader>
         <CardContent className="flex-1 p-0">
