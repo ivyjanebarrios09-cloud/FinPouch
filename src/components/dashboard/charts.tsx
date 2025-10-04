@@ -267,7 +267,7 @@ export function ActivityDoughnutChart({ activities, isLoading }: ActivityChartPr
           <PolarGrid stroke="hsl(var(--muted-foreground) / 0.5)" />
           <PolarAngleAxis dataKey="name" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
           <PolarRadiusAxis angle={30} domain={[0, 'dataMax']} axisLine={false} tick={false} />
-          <Radar name="Opens" dataKey="opens" stroke="hsl(var(--chart-1))" fill="hsl(var(--chart-1))" fillOpacity={0.6} />
+          <Radar name="Opens" dataKey="opens" stroke="hsl(var(--chart-1))" fill="hsl(var(--chart-1))" fillOpacity={0.6} isAnimationActive={true} animationDuration={1500} />
           <Tooltip
             cursor={{ fill: 'hsl(var(--secondary))' }}
             contentStyle={{
