@@ -9,6 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {sleep} from '@/lib/utils';
 import {z} from 'genkit';
 
 const GenerateSpendingAdviceInputSchema = z.object({
@@ -52,7 +53,30 @@ const generateSpendingAdviceFlow = ai.defineFlow(
     outputSchema: GenerateSpendingAdviceOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    const maxRetries = 3;
+    let attempt = 0;
+    while (attempt < maxRetries) {
+      try {
+        const {output} = await prompt(input);
+        return output!;
+      } catch (error: any) {
+        attempt++;
+        if (attempt >= maxRetries) {
+          console.error(
+            'AI advice generation failed after multiple retries:',
+            error
+          );
+          throw error;
+        }
+        const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+        console.warn(
+          `AI advice generation failed. Retrying in ${delay}ms...`,
+          error
+        );
+        await sleep(delay);
+      }
+    }
+    // This part should not be reachable if retries are handled correctly.
+    throw new Error('Failed to generate spending advice after all retries.');
   }
 );
