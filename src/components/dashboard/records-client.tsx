@@ -126,7 +126,7 @@ export function RecordsClient() {
                                 {activities.map((activity, index) => {
                                     const date = isValidDate(activity.timestamp) ? parseCustomTimestamp(activity.timestamp) : null;
                                     return (
-                                        <li key={activity.id} className="relative flex items-start gap-4 animate-in fade-in-0 slide-in-from-top-5 duration-700">
+                                        <li key={activity.id} className="relative flex items-start gap-4 animate-in fade-in-0 slide-in-from-bottom-5 duration-700">
                                             <div className="absolute left-0 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-secondary -translate-x-1/2 ring-4 ring-background">
                                                 <Unlock className="h-4 w-4 text-secondary-foreground" />
                                             </div>
