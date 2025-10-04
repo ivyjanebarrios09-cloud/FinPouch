@@ -67,3 +67,17 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  @keyframes timeline-glow {
+    0%, 100% {
+      box-shadow: 0 0 5px -2px hsl(var(--primary) / 0.5);
+    }
+    50% {
+      box-shadow: 0 0 10px 2px hsl(var(--primary) / 0.7);
+    }
+  }
+  .animate-timeline-glow {
+    animation: timeline-glow 4s ease-in-out infinite;
+  }
+}

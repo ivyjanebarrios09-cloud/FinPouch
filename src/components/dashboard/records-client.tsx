@@ -121,12 +121,12 @@ export function RecordsClient() {
                 {loading ? renderLoadingState() : (
                     activities.length > 0 ? (
                         <div className="relative pl-6">
-                            <div className="absolute left-[30px] top-0 h-full w-0.5 bg-border -translate-x-1/2"></div>
+                            <div className="absolute left-[30px] top-0 h-full w-0.5 bg-primary/20 -translate-x-1/2 animate-timeline-glow rounded-full"></div>
                             <ul className="space-y-8">
                                 {activities.map((activity, index) => {
                                     const date = isValidDate(activity.timestamp) ? parseCustomTimestamp(activity.timestamp) : null;
                                     return (
-                                        <li key={activity.id} className="relative flex items-start gap-4 animate-in fade-in-0 slide-in-from-top-4 duration-500">
+                                        <li key={activity.id} className="relative flex items-start gap-4 animate-in fade-in-0 slide-in-from-top-5 duration-700">
                                             <div className="absolute left-0 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-secondary -translate-x-1/2 ring-4 ring-background">
                                                 <Unlock className="h-4 w-4 text-secondary-foreground" />
                                             </div>
