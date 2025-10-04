@@ -9,6 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import { sleep } from '@/lib/utils';
 import {z} from 'genkit';
 
 const GenerateSpendingAdviceInputSchema = z.object({
@@ -51,8 +52,29 @@ const generateSpendingAdviceFlow = ai.defineFlow(
     inputSchema: GenerateSpendingAdviceInputSchema,
     outputSchema: GenerateSpendingAdviceOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input, streamingCallback) => {
+    const maxRetries = 3;
+    let attempt = 0;
+    let delay = 1000; // start with 1 second
+
+    while (attempt < maxRetries) {
+      try {
+        const {output} = await prompt(input);
+        return output!;
+      } catch (error: any) {
+        attempt++;
+        if (error.message.includes('503') && attempt < maxRetries) {
+          console.log(`Attempt ${attempt} failed with 503 error. Retrying in ${delay}ms...`);
+          await sleep(delay);
+          delay *= 2; // exponential backoff
+        } else {
+          // For non-503 errors or if max retries are reached, re-throw the error
+          console.error(`AI advice generation failed after ${attempt} attempts.`, error);
+          throw new Error('Failed to generate AI advice after multiple retries.');
+        }
+      }
+    }
+    // This should not be reached, but is a fallback.
+    throw new Error('Failed to generate AI advice after multiple retries.');
   }
 );
