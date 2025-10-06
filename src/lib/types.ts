@@ -7,6 +7,7 @@ export type WalletActivity = {
   userId: string;
   deviceId?: string;
   deviceName?: string;
+  spendingRecord?: SpendingRecord | null;
 };
 
 export type Device = {

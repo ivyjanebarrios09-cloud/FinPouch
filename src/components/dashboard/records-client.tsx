@@ -5,14 +5,14 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
 import { collection, query, onSnapshot, Unsubscribe } from "firebase/firestore";
-import type { WalletActivity, Device } from "@/lib/types";
+import type { WalletActivity, Device, SpendingRecord } from "@/lib/types";
 import { format } from "date-fns";
 import { Skeleton } from "../ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { parseCustomTimestamp } from "@/lib/utils";
 import { ScrollArea } from "../ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { Unlock } from "lucide-react";
+import { Unlock, ShoppingCart, DollarSign } from "lucide-react";
 import Link from "next/link";
 
 export function RecordsClient() {
@@ -30,6 +30,24 @@ export function RecordsClient() {
 
     const devicesQuery = query(collection(db, "users", user.uid, "devices"));
     
+    // Listen for spending records
+    const spendingRecordsQuery = query(collection(db, "users", user.uid, "spendingRecords"));
+    const unsubscribeSpendingRecords = onSnapshot(spendingRecordsQuery, (spendingSnapshot) => {
+        const spendingRecordsData: { [activityId: string]: SpendingRecord } = {};
+        spendingSnapshot.forEach((doc) => {
+            const record = { id: doc.id, ...doc.data() } as SpendingRecord;
+            spendingRecordsData[record.activityId] = record;
+        });
+
+        // This will trigger a re-render and merge with existing activities
+        setActivities(prevActivities =>
+            prevActivities.map(act => ({
+                ...act,
+                spendingRecord: spendingRecordsData[act.id] || null,
+            }))
+        );
+    });
+    
     const unsubscribeDevices = onSnapshot(devicesQuery, (devicesSnapshot) => {
         const devicesData: Device[] = [];
         devicesSnapshot.forEach((doc) => {
@@ -45,46 +63,57 @@ export function RecordsClient() {
         let allActivities: WalletActivity[] = [];
         const activityUnsubscribers: Unsubscribe[] = [];
 
-        devicesData.forEach((device) => {
-            const activityQuery = query(
-                collection(db, "users", user.uid, "devices", device.id, "walletActivity")
-            );
-            
-            const unsubscribeActivities = onSnapshot(activityQuery, (activitySnapshot) => {
-                allActivities = allActivities.filter(act => act.deviceId !== device.id);
+        const deviceActivityPromises = devicesData.map((device) => {
+            return new Promise<void>((resolve) => {
+                const activityQuery = query(
+                    collection(db, "users", user.uid, "devices", device.id, "walletActivity")
+                );
 
-                activitySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    if (data.timestamp) {
-                        allActivities.push({
-                            id: doc.id,
-                            ...data,
-                            deviceId: device.id,
-                            deviceName: device.name,
-                        } as WalletActivity);
-                    }
-                });
+                const unsubscribeActivities = onSnapshot(activityQuery, (activitySnapshot) => {
+                    // Filter out old activities for this device
+                    allActivities = allActivities.filter(act => act.deviceId !== device.id);
 
-                allActivities.sort((a, b) => {
-                    const dateA = a.timestamp ? parseCustomTimestamp(a.timestamp)?.getTime() : 0;
-                    const dateB = b.timestamp ? parseCustomTimestamp(b.timestamp)?.getTime() : 0;
-                    return (dateB || 0) - (dateA || 0);
+                    activitySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        if (data.timestamp) {
+                            allActivities.push({
+                                id: doc.id,
+                                ...data,
+                                deviceId: device.id,
+                                deviceName: device.name,
+                            } as WalletActivity);
+                        }
+                    });
+
+                    // Sort all activities together after any update
+                    allActivities.sort((a, b) => {
+                        const dateA = a.timestamp ? parseCustomTimestamp(a.timestamp)?.getTime() : 0;
+                        const dateB = b.timestamp ? parseCustomTimestamp(b.timestamp)?.getTime() : 0;
+                        return (dateB || 0) - (dateA || 0);
+                    });
+
+                    setActivities([...allActivities]);
+                    resolve();
+                }, (error) => {
+                    console.error(`Error fetching activities for device ${device.id}:`, error);
+                    resolve(); // Resolve even on error to not block other devices
                 });
-                setActivities([...allActivities]);
+                activityUnsubscribers.push(unsubscribeActivities);
             });
-            activityUnsubscribers.push(unsubscribeActivities);
         });
         
-        const timer = setTimeout(() => setLoading(false), 500);
+        Promise.all(deviceActivityPromises).then(() => {
+             setLoading(false)
+        });
 
         return () => {
-            clearTimeout(timer);
             activityUnsubscribers.forEach(unsub => unsub());
         };
     });
 
     return () => {
         unsubscribeDevices();
+        unsubscribeSpendingRecords();
     };
   }, [user]);
   
@@ -98,17 +127,43 @@ export function RecordsClient() {
     return (
         <div className="space-y-6">
             {Array.from({ length: 5 }).map((_, i) => (
-                <div key={`loading-${i}`} className="flex items-center gap-4">
-                    <Skeleton className="h-8 w-8 rounded-full" />
+                <div key={`loading-${i}`} className="flex items-start gap-4">
+                    <Skeleton className="h-8 w-8 rounded-full mt-1" />
                     <div className="flex-1 space-y-2">
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-3 w-1/2" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-3 w-1/3" />
+                        <Skeleton className="h-3 w-1/4" />
                     </div>
                 </div>
             ))}
         </div>
     );
   }
+
+  const getRecordDisplay = (activity: WalletActivity) => {
+    if (activity.spendingRecord === undefined) {
+      // Data not loaded yet for this record
+      return null;
+    }
+    if (activity.spendingRecord === null) {
+      // No spending record exists
+      return <p className="text-xs text-amber-500 animate-pulse">Pending spending details...</p>;
+    }
+    if (activity.spendingRecord.isSpent) {
+      return (
+        <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+            <ShoppingCart className="h-4 w-4" />
+            <span>Spent: {activity.spendingRecord.spentWith}</span>
+        </div>
+      );
+    }
+    return (
+        <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+            <DollarSign className="h-4 w-4" />
+            <span>Not Spent</span>
+        </div>
+    );
+  };
 
   return (
     <Card className="h-[500px] flex flex-col">
@@ -136,6 +191,9 @@ export function RecordsClient() {
                                                 <time className="text-xs text-muted-foreground/80 group-hover:text-primary transition-colors">
                                                     {date ? `${format(date, "MMM d, yyyy")} at ${format(date, "h:mm a")}` : "N/A"}
                                                 </time>
+                                                <div className="mt-2">
+                                                    {getRecordDisplay(activity)}
+                                                </div>
                                             </Link>
                                         </li>
                                     );
