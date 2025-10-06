@@ -13,6 +13,7 @@ import { parseCustomTimestamp } from "@/lib/utils";
 import { ScrollArea } from "../ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Unlock } from "lucide-react";
+import Link from "next/link";
 
 export function RecordsClient() {
   const { user } = useAuth();
@@ -74,7 +75,6 @@ export function RecordsClient() {
             activityUnsubscribers.push(unsubscribeActivities);
         });
         
-        // Use a timer to ensure loading state is shown for a bit, improving UX
         const timer = setTimeout(() => setLoading(false), 500);
 
         return () => {
@@ -121,22 +121,22 @@ export function RecordsClient() {
                 {loading ? renderLoadingState() : (
                     activities.length > 0 ? (
                         <div className="relative pl-6">
-                            <div className="absolute left-[30px] top-0 h-full w-0.5 bg-border -translate-x-1/2"></div>
+                             <div className="absolute left-[30px] top-0 h-full w-0.5 bg-gradient-to-b from-primary/50 via-primary to-primary/50 animate-[glow_4s_ease-in-out_infinite] -translate-x-1/2"></div>
                             <ul className="space-y-8">
                                 {activities.map((activity, index) => {
                                     const date = isValidDate(activity.timestamp) ? parseCustomTimestamp(activity.timestamp) : null;
                                     return (
-                                        <li key={activity.id} className="relative flex items-start gap-4 animate-in fade-in-0 slide-in-from-top-4 duration-500">
+                                        <li key={activity.id} className="relative flex items-start gap-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-700">
                                             <div className="absolute left-0 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-secondary -translate-x-1/2 ring-4 ring-background">
                                                 <Unlock className="h-4 w-4 text-secondary-foreground" />
                                             </div>
-                                            <div className="pl-8 flex-1">
-                                                <p className="font-semibold text-foreground">Wallet Opened</p>
+                                            <Link href={`/dashboard/records/${activity.id}?deviceId=${activity.deviceId}`} className="pl-8 flex-1 group">
+                                                <p className="font-semibold text-foreground group-hover:text-primary transition-colors">Wallet Opened</p>
                                                 <p className="text-sm text-muted-foreground">{activity.deviceName || activity.deviceId || 'Unknown Device'}</p>
-                                                <time className="text-xs text-muted-foreground/80">
+                                                <time className="text-xs text-muted-foreground/80 group-hover:text-primary transition-colors">
                                                     {date ? `${format(date, "MMM d, yyyy")} at ${format(date, "h:mm a")}` : "N/A"}
                                                 </time>
-                                            </div>
+                                            </Link>
                                         </li>
                                     );
                                 })}

@@ -17,4 +17,12 @@ export type Device = {
     createdAt: number;
 }
 
+export type SpendingRecord = {
+    id: string;
+    activityId: string;
+    userId: string;
+    spentWith?: string;
+    isSpent: boolean;
+    createdAt: number;
+}
     

@@ -1,19 +1,74 @@
+/**
+ * @fileoverview Firestore Security Rules for the application.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model.  Users can only
+ * access their own data.
+ *
+ * Data Structure:
+ * All data is nested under /users/{userId}, then /devices/{deviceId}, and then /walletActivity/{activityId}.
+ *
+ * Key Security Decisions:
+ * - Users cannot list all users.
+ * - Wallet activity is strictly owned by the user and device under which it resides.
+ *
+ * Denormalization for Authorization:
+ *  - WalletActivity documents contain a userId field, which is used to verify ownership.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 🔹 Devices collection (still requires authenticated user)
+    /**
+     * @description Only the user who owns the device can manage it.
+     * @path /users/{userId}/devices/{deviceId}
+     * @allow (create) - User 'user_abc' can create a device with deviceId 'device_xyz' if authenticated as 'user_abc'.
+     * @allow (update) - User 'user_abc' can update device 'device_xyz' if authenticated as 'user_abc'.
+     * @allow (delete) - User 'user_abc' can delete device 'device_xyz' if authenticated as 'user_abc'.
+     * @deny (create) - User 'user_def' cannot create a device under 'user_abc's' user ID.
+     * @deny (update) - User 'user_def' cannot update device 'device_xyz' under 'user_abc's' user ID.
+     * @deny (delete) - User 'user_def' cannot delete device 'device_xyz' under 'user_abc's' user ID.
+     * @principle Enforces document ownership for writes.
+     */
     match /users/{userId}/devices/{deviceId} {
-      allow get, list, create, update, delete: if request.auth.uid == userId;
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId && request.resource.data.deviceId == deviceId;
+      allow update: if isSignedIn() && isExistingOwner(userId) && isOwner(userId) && resource.data.userId == userId && resource.data.deviceId == deviceId;
+      allow delete: if isSignedIn() && isExistingOwner(userId) && isOwner(userId);
     }
 
-    // 🔹 Wallet Activity subcollection
+    /**
+     * @description Only the user who owns the device can manage its wallet activity.
+     * @path /users/{userId}/devices/{deviceId}/walletActivity/{activityId}
+     * @allow (create) - User 'user_abc' can create a wallet activity with activityId 'activity_123' if authenticated as 'user_abc'.
+     * @allow (update) - User 'user_abc' can update wallet activity 'activity_123' if authenticated as 'user_abc'.
+     * @allow (delete) - User 'user_abc' can delete wallet activity 'activity_123' if authenticated as 'user_abc'.
+     * @deny (create) - User 'user_def' cannot create a wallet activity under 'user_abc's' user ID and deviceId.
+     * @deny (update) - User 'user_def' cannot update wallet activity 'activity_123' under 'user_abc's' user ID and deviceId.
+     * @deny (delete) - User 'user_def' cannot delete wallet activity 'activity_123' under 'user_abc's' user ID and deviceId.
+     * @principle Enforces document ownership for writes.
+     */
     match /users/{userId}/devices/{deviceId}/walletActivity/{activityId} {
-      // ✅ ESP32 can create activity logs without authentication
-      allow create: if request.resource.data.keys().hasAll(['timestamp', 'reedState']);
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isSignedIn() && isExistingOwner(userId) && isOwner(userId) && resource.data.userId == userId;
+      allow delete: if isSignedIn() && isExistingOwner(userId) && isOwner(userId);
+    }
 
-      // ✅ Only signed-in owner can read, update, or delete
-      allow get, list, update, delete: if request.auth.uid == userId;
+    // --- Helper functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
     }
   }
 }

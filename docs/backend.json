@@ -67,6 +67,35 @@
         }
       },
       "required": ["deviceId", "name", "userId", "createdAt"]
+    },
+    "spendingRecord": {
+      "title": "Spending Record",
+      "description": "A record of where money was spent for a wallet activity.",
+      "type": "object",
+      "properties": {
+        "activityId": {
+          "type": "string",
+          "description": "The ID of the corresponding wallet activity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user."
+        },
+        "spentWith": {
+          "type": "string",
+          "description": "The description of where the money was spent."
+        },
+        "isSpent": {
+          "type": "boolean",
+          "description": "Indicates if money was spent or not."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time the record was created."
+        }
+      },
+      "required": ["activityId", "userId", "isSpent"]
     }
   },
   "auth": {
@@ -84,6 +113,12 @@
         "$ref": "#/entities/device"
       },
       "description": "Stores devices registered by each user."
+    },
+    "/users/{userId}/spendingRecords/{recordId}": {
+        "schema": {
+            "$ref": "#/entities/spendingRecord"
+        },
+        "description": "Stores spending records for each user."
     }
   }
 }
