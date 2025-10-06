@@ -12,12 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui
 import { parseCustomTimestamp } from "@/lib/utils";
 import { ScrollArea } from "../ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { Unlock, ShoppingCart, DollarSign } from "lucide-react";
+import { Unlock, ShoppingCart, DollarSign, Edit } from "lucide-react";
 import Link from "next/link";
+import { Badge } from "../ui/badge";
 
 export function RecordsClient() {
   const { user } = useAuth();
   const [activities, setActivities] = useState<WalletActivity[]>([]);
+  const [spendingRecords, setSpendingRecords] = useState<{[activityId: string]: SpendingRecord}>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,8 +30,6 @@ export function RecordsClient() {
 
     setLoading(true);
 
-    const devicesQuery = query(collection(db, "users", user.uid, "devices"));
-    
     // Listen for spending records
     const spendingRecordsQuery = query(collection(db, "users", user.uid, "spendingRecords"));
     const unsubscribeSpendingRecords = onSnapshot(spendingRecordsQuery, (spendingSnapshot) => {
@@ -38,72 +38,49 @@ export function RecordsClient() {
             const record = { id: doc.id, ...doc.data() } as SpendingRecord;
             spendingRecordsData[record.activityId] = record;
         });
-
-        // This will trigger a re-render and merge with existing activities
-        setActivities(prevActivities =>
-            prevActivities.map(act => ({
-                ...act,
-                spendingRecord: spendingRecordsData[act.id] || null,
-            }))
-        );
+        setSpendingRecords(spendingRecordsData);
     });
-    
-    const unsubscribeDevices = onSnapshot(devicesQuery, (devicesSnapshot) => {
-        const devicesData: Device[] = [];
-        devicesSnapshot.forEach((doc) => {
-            devicesData.push({ id: doc.id, ...doc.data() } as Device);
-        });
 
-        if (devicesData.length === 0) {
+    const devicesQuery = query(collection(db, "users", user.uid, "devices"));
+    const unsubscribeDevices = onSnapshot(devicesQuery, (devicesSnapshot) => {
+        const devices = devicesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Device));
+        
+        if (devices.length === 0) {
             setActivities([]);
             setLoading(false);
             return;
         }
 
-        let allActivities: WalletActivity[] = [];
         const activityUnsubscribers: Unsubscribe[] = [];
+        let allActivities: WalletActivity[] = [];
 
-        const deviceActivityPromises = devicesData.map((device) => {
-            return new Promise<void>((resolve) => {
-                const activityQuery = query(
-                    collection(db, "users", user.uid, "devices", device.id, "walletActivity")
-                );
+        devices.forEach(device => {
+            const activityQuery = query(collection(db, "users", user.uid, "devices", device.id, "walletActivity"));
+            const unsub = onSnapshot(activityQuery, activitySnapshot => {
+                const deviceActivities = activitySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    deviceId: device.id,
+                    deviceName: device.name,
+                } as WalletActivity));
 
-                const unsubscribeActivities = onSnapshot(activityQuery, (activitySnapshot) => {
-                    // Filter out old activities for this device
-                    allActivities = allActivities.filter(act => act.deviceId !== device.id);
+                // Replace old activities for this device with the new ones
+                allActivities = [
+                    ...allActivities.filter(act => act.deviceId !== device.id),
+                    ...deviceActivities
+                ];
 
-                    activitySnapshot.forEach((doc) => {
-                        const data = doc.data();
-                        if (data.timestamp) {
-                            allActivities.push({
-                                id: doc.id,
-                                ...data,
-                                deviceId: device.id,
-                                deviceName: device.name,
-                            } as WalletActivity);
-                        }
-                    });
-
-                    // Sort all activities together after any update
-                    allActivities.sort((a, b) => {
-                        const dateA = a.timestamp ? parseCustomTimestamp(a.timestamp)?.getTime() : 0;
-                        const dateB = b.timestamp ? parseCustomTimestamp(b.timestamp)?.getTime() : 0;
-                        return (dateB || 0) - (dateA || 0);
-                    });
-
-                    setActivities([...allActivities]);
-                    resolve();
-                }, (error) => {
-                    console.error(`Error fetching activities for device ${device.id}:`, error);
-                    resolve(); // Resolve even on error to not block other devices
+                // Sort all activities together after any update
+                allActivities.sort((a, b) => {
+                    const dateA = a.timestamp ? parseCustomTimestamp(a.timestamp)?.getTime() : 0;
+                    const dateB = b.timestamp ? parseCustomTimestamp(b.timestamp)?.getTime() : 0;
+                    return (dateB || 0) - (dateA || 0);
                 });
-                activityUnsubscribers.push(unsubscribeActivities);
+
+                setActivities([...allActivities]);
+                setLoading(false);
             });
-        });
-        
-        Promise.all(deviceActivityPromises).then(() => {
-             setLoading(false)
+            activityUnsubscribers.push(unsub);
         });
 
         return () => {
@@ -141,27 +118,29 @@ export function RecordsClient() {
   }
 
   const getRecordDisplay = (activity: WalletActivity) => {
-    if (activity.spendingRecord === undefined) {
-      // Data not loaded yet for this record
-      return null;
-    }
-    if (activity.spendingRecord === null) {
-      // No spending record exists
-      return <p className="text-xs text-amber-500 animate-pulse">Pending spending details...</p>;
-    }
-    if (activity.spendingRecord.isSpent) {
+    const record = spendingRecords[activity.id];
+
+    if (!record) {
       return (
-        <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-            <ShoppingCart className="h-4 w-4" />
-            <span>Spent: {activity.spendingRecord.spentWith}</span>
-        </div>
+         <Badge variant="outline" className="mt-2 text-amber-600 border-amber-500 animate-pulse">
+            <Edit className="h-3 w-3 mr-1" />
+            Pending record...
+         </Badge>
       );
     }
+    
+    if (record.isSpent) {
+      return (
+        <p className="text-sm text-muted-foreground mt-2 italic">
+            &quot;Spent: {record.spentWith}&quot;
+        </p>
+      );
+    }
+    
     return (
-        <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
-            <DollarSign className="h-4 w-4" />
-            <span>Not Spent</span>
-        </div>
+        <p className="text-sm text-muted-foreground mt-2 italic">
+            &quot;Not Spent&quot;
+        </p>
     );
   };
 
@@ -211,3 +190,4 @@ export function RecordsClient() {
     </Card>
   );
 }
+
