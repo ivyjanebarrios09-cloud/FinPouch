@@ -1,74 +1,109 @@
 /**
- * @fileoverview Firestore Security Rules for the application.
- *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model.  Users can only
- * access their own data.
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a strict user-ownership model, ensuring that users can only access their own data.
  *
  * Data Structure:
- * All data is nested under /users/{userId}, then /devices/{deviceId}, and then /walletActivity/{activityId}.
+ * - All data is nested under the `/users/{userId}` path.
+ * - Devices are stored under `/users/{userId}/devices/{deviceId}`.
+ * - Wallet activity is stored under `/users/{userId}/devices/{deviceId}/walletActivity/{activityId}`.
+ * - Spending records are stored under `/users/{userId}/spendingRecords/{recordId}`.
  *
  * Key Security Decisions:
- * - Users cannot list all users.
- * - Wallet activity is strictly owned by the user and device under which it resides.
+ * - Users can only create, read, update, and delete their own devices and wallet activities.
+ * - Users can only create, read, update, and delete their own spending records.
+ * - Listing of users is not allowed.
  *
  * Denormalization for Authorization:
- *  - WalletActivity documents contain a userId field, which is used to verify ownership.
+ * - Spending records contain a `userId` field to allow for easy ownership checks.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Only the user who owns the device can manage it.
-     * @path /users/{userId}/devices/{deviceId}
-     * @allow (create) - User 'user_abc' can create a device with deviceId 'device_xyz' if authenticated as 'user_abc'.
-     * @allow (update) - User 'user_abc' can update device 'device_xyz' if authenticated as 'user_abc'.
-     * @allow (delete) - User 'user_abc' can delete device 'device_xyz' if authenticated as 'user_abc'.
-     * @deny (create) - User 'user_def' cannot create a device under 'user_abc's' user ID.
-     * @deny (update) - User 'user_def' cannot update device 'device_xyz' under 'user_abc's' user ID.
-     * @deny (delete) - User 'user_def' cannot delete device 'device_xyz' under 'user_abc's' user ID.
-     * @principle Enforces document ownership for writes.
+     * @description Checks if the request is authenticated.
+     * @return {boolean} True if the request is authenticated, false otherwise.
      */
-    match /users/{userId}/devices/{deviceId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId && request.resource.data.deviceId == deviceId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && isOwner(userId) && resource.data.userId == userId && resource.data.deviceId == deviceId;
-      allow delete: if isSignedIn() && isExistingOwner(userId) && isOwner(userId);
-    }
-
-    /**
-     * @description Only the user who owns the device can manage its wallet activity.
-     * @path /users/{userId}/devices/{deviceId}/walletActivity/{activityId}
-     * @allow (create) - User 'user_abc' can create a wallet activity with activityId 'activity_123' if authenticated as 'user_abc'.
-     * @allow (update) - User 'user_abc' can update wallet activity 'activity_123' if authenticated as 'user_abc'.
-     * @allow (delete) - User 'user_abc' can delete wallet activity 'activity_123' if authenticated as 'user_abc'.
-     * @deny (create) - User 'user_def' cannot create a wallet activity under 'user_abc's' user ID and deviceId.
-     * @deny (update) - User 'user_def' cannot update wallet activity 'activity_123' under 'user_abc's' user ID and deviceId.
-     * @deny (delete) - User 'user_def' cannot delete wallet activity 'activity_123' under 'user_abc's' user ID and deviceId.
-     * @principle Enforces document ownership for writes.
-     */
-    match /users/{userId}/devices/{deviceId}/walletActivity/{activityId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isSignedIn() && isExistingOwner(userId) && isOwner(userId) && resource.data.userId == userId;
-      allow delete: if isSignedIn() && isExistingOwner(userId) && isOwner(userId);
-    }
-
-    // --- Helper functions ---
     function isSignedIn() {
       return request.auth != null;
     }
 
+    /**
+     * @description Checks if the authenticated user ID matches the provided user ID.
+     * @param {string} userId The user ID to check against.
+     * @return {boolean} True if the user ID matches, false otherwise.
+     */
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return isSignedIn() && request.auth.uid == userId;
     }
 
+    /**
+     * @description Checks if the authenticated user is the owner of an existing document.
+     * @param {string} userId The user ID to check against.
+     * @return {boolean} True if the user is the owner of the existing document, false otherwise.
+     */
     function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Rules for the /users collection.
+     * @path /users/{userId}
+     * @allow (create) User with uid 'user123' can create their own user document.
+     * @deny (create) User with uid 'user123' cannot create a user document for 'user456'.
+     * @principle Enforces self-creation; only the user themselves can create their document.
+     */
+    match /users/{userId} {
+      allow get: if false;
+      allow list: if false;
+      allow create: if isOwner(userId);
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Rules for the /users/{userId}/devices/{deviceId} collection.
+     * @path /users/{userId}/devices/{deviceId}
+     * @allow (create) User with uid 'user123' can create a device document under their user ID.
+     * @deny (create) User with uid 'user123' cannot create a device document under user ID 'user456'.
+     * @principle Enforces document ownership for writes; only the owner can modify.
+     */
+    match /users/{userId}/devices/{deviceId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == userId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for the /users/{userId}/devices/{deviceId}/walletActivity/{activityId} collection.
+     * @path /users/{userId}/devices/{deviceId}/walletActivity/{activityId}
+     * @allow (create) User with uid 'user123' can create a wallet activity document under their device.
+     * @deny (create) User with uid 'user123' cannot create a wallet activity document under device 'device456'.
+     * @principle Enforces document ownership for writes; only the owner can modify.
+     */
+    match /users/{userId}/devices/{deviceId}/walletActivity/{activityId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == userId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+     /**
+      * @description Rules for the /users/{userId}/spendingRecords/{recordId} collection.
+      * @path /users/{userId}/spendingRecords/{recordId}
+      * @allow (create) User with uid 'user123' can create a spending record under their user ID.
+      * @deny (create) User with uid 'user123' cannot create a spending record under user ID 'user456'.
+      * @principle Enforces document ownership for writes; only the owner can modify.
+      */
+    match /users/{userId}/spendingRecords/{recordId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == userId;
+      allow delete: if isExistingOwner(userId);
     }
   }
 }
