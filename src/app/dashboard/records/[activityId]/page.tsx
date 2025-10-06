@@ -35,6 +35,8 @@ import { ArrowLeft, Calendar, Clock } from "lucide-react";
 import { parseCustomTimestamp } from "@/lib/utils";
 import { format } from "date-fns";
 import Link from "next/link";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 export default function ActivityDetailPage() {
   const { user } = useAuth();
@@ -106,36 +108,36 @@ export default function ActivityDetailPage() {
         return;
     }
 
-    try {
-      const recordToSave = {
-        userId: user.uid,
-        activityId,
-        isSpent: spendingOption === 'spent',
-        spentWith: spendingOption === 'spent' ? spentWith : '',
-        createdAt: spendingRecord?.createdAt || serverTimestamp(),
-        updatedAt: serverTimestamp()
-      };
-      
-      const docRef = spendingRecord 
-        ? doc(db, "users", user.uid, "spendingRecords", spendingRecord.id)
-        : doc(collection(db, "users", user.uid, "spendingRecords"));
+    const recordToSave = {
+      userId: user.uid,
+      activityId,
+      isSpent: spendingOption === 'spent',
+      spentWith: spendingOption === 'spent' ? spentWith : '',
+      createdAt: spendingRecord?.createdAt || serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+    
+    const docRef = spendingRecord 
+      ? doc(db, "users", user.uid, "spendingRecords", spendingRecord.id)
+      : doc(collection(db, "users", user.uid, "spendingRecords"));
 
-      await setDoc(docRef, recordToSave, { merge: true });
-
-      toast({
-        title: "Success",
-        description: "Your spending record has been saved.",
+    setDoc(docRef, recordToSave, { merge: true })
+      .then(() => {
+        toast({
+          title: "Success",
+          description: "Your spending record has been saved.",
+        });
+        router.push("/dashboard/records");
+      })
+      .catch(async (serverError) => {
+        const isUpdate = !!spendingRecord;
+        const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: isUpdate ? 'update' : 'create',
+          requestResourceData: recordToSave,
+        });
+        errorEmitter.emit('permission-error', permissionError);
       });
-      router.push("/dashboard/records");
-
-    } catch (error) {
-      console.error("Error saving record:", error);
-      toast({
-        title: "Error",
-        description: "Could not save spending record.",
-        variant: "destructive",
-      });
-    }
   };
   
   const activityDate = activity?.timestamp ? parseCustomTimestamp(activity.timestamp) : null;

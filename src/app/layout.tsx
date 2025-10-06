@@ -3,6 +3,7 @@ import './globals.css';
 import { AuthProvider } from '@/hooks/use-auth';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 export const metadata: Metadata = {
   title: 'FinPouch',
@@ -29,6 +30,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
+            <FirebaseErrorListener />
             {children}
             <Toaster />
           </AuthProvider>
