@@ -17,12 +17,14 @@ import {
   CalendarDays,
   Smartphone,
   Clock,
+  Calendar,
+  CalendarCheck,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ActivityByHourChart, ActivityDoughnutChart } from "./charts";
 import { AiAdvice } from "./ai-advice";
-import { subDays, startOfToday, isToday } from "date-fns";
+import { subDays, startOfToday, isToday, format } from "date-fns";
 import { parseCustomTimestamp } from "@/lib/utils";
 
 function StatCard({
@@ -166,6 +168,7 @@ export function DashboardClient() {
     });
 
     const maxOpens = Math.max(...hourCounts);
+    if (maxOpens === 0) return "N/A";
     const peakHour24 = hourCounts.indexOf(maxOpens);
     
     if (peakHour24 === -1) return "N/A";
@@ -177,6 +180,57 @@ export function DashboardClient() {
 
   }, [activities]);
 
+  const peakMonth = useMemo(() => {
+    if (activities.length === 0) return "N/A";
+
+    const monthCounts = Array(12).fill(0);
+    activities.forEach(activity => {
+        if (activity.timestamp) {
+            const date = parseCustomTimestamp(activity.timestamp);
+            if (date) {
+              const month = date.getMonth();
+              monthCounts[month]++;
+            }
+        }
+    });
+    
+    const maxOpens = Math.max(...monthCounts);
+    if (maxOpens === 0) return "N/A";
+    const peakMonthIndex = monthCounts.indexOf(maxOpens);
+
+    if (peakMonthIndex === -1) return "N/A";
+    
+    const date = new Date();
+    date.setMonth(peakMonthIndex);
+    return format(date, "MMMM");
+
+  }, [activities]);
+
+  const peakDay = useMemo(() => {
+    if (activities.length === 0) return "N/A";
+
+    const dayCounts = Array(7).fill(0);
+    activities.forEach(activity => {
+        if (activity.timestamp) {
+            const date = parseCustomTimestamp(activity.timestamp);
+            if (date) {
+              const day = date.getDay();
+              dayCounts[day]++;
+            }
+        }
+    });
+    
+    const maxOpens = Math.max(...dayCounts);
+    if (maxOpens === 0) return "N/A";
+    const peakDayIndex = dayCounts.indexOf(maxOpens);
+    
+    if (peakDayIndex === -1) return "N/A";
+
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    return days[peakDayIndex];
+
+  }, [activities]);
+
   return (
     <>
       <div className="flex items-center justify-between space-y-2">
@@ -185,7 +239,7 @@ export function DashboardClient() {
         </h2>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <StatCard
           title="Total Wallet Opens"
           value={totalOpens}
@@ -208,6 +262,18 @@ export function DashboardClient() {
           title="Peak Activity Hour"
           value={peakHour}
           icon={Clock}
+          isLoading={loading}
+        />
+        <StatCard
+          title="Peak Activity Month"
+          value={peakMonth}
+          icon={Calendar}
+          isLoading={loading}
+        />
+        <StatCard
+          title="Peak Activity Day"
+          value={peakDay}
+          icon={CalendarCheck}
           isLoading={loading}
         />
       </div>
@@ -247,5 +313,3 @@ export function DashboardClient() {
     </>
   );
 }
-
-    
