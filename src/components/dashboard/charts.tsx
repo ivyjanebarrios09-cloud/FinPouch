@@ -72,7 +72,7 @@ export function ActivityByHourChart({ activities, isLoading }: ActivityChartProp
                             borderRadius: "var(--radius)",
                         }}
                     />
-                    <Line type="monotone" dataKey="opens" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-1))" }} activeDot={{ r: 6 }} animationDuration={1500} />
+                    <Line isAnimationActive={true} animationDuration={1200} type="monotone" dataKey="opens" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-1))" }} activeDot={{ r: 8, stroke: 'hsl(var(--background))', strokeWidth: 2 }} />
                 </LineChart>
             </ResponsiveContainer>
         </div>
@@ -144,7 +144,7 @@ export function ActivityByDayChart({ activities, isLoading }: ActivityChartProps
                  formatter={(value, name, props) => [`${value} opens`, `Date: ${props.payload.date}`]}
                  labelFormatter={() => ''}
             />
-            <Line type="monotone" dataKey="opens" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-2))" }} activeDot={{ r: 6 }} animationDuration={1500} />
+            <Line isAnimationActive={true} animationDuration={1200} type="monotone" dataKey="opens" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-2))" }} activeDot={{ r: 8, stroke: 'hsl(var(--background))', strokeWidth: 2 }} />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -215,7 +215,7 @@ export function ActivityByMonthChart({ activities, isLoading }: ActivityChartPro
                  formatter={(value, name, props) => [`${value} opens`, `Date: ${props.payload.date}`]}
                  labelFormatter={() => ''}
             />
-            <Line type="monotone" dataKey="opens" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-1))" }} activeDot={{ r: 6 }} animationDuration={1500} />
+            <Line isAnimationActive={true} animationDuration={1200} type="monotone" dataKey="opens" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--chart-1))" }} activeDot={{ r: 8, stroke: 'hsl(var(--background))', strokeWidth: 2 }} />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -267,7 +267,7 @@ export function ActivityDoughnutChart({ activities, isLoading }: ActivityChartPr
           <PolarGrid stroke="hsl(var(--muted-foreground) / 0.5)" />
           <PolarAngleAxis dataKey="name" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
           <PolarRadiusAxis angle={30} domain={[0, 'dataMax']} axisLine={false} tick={false} />
-          <Radar name="Opens" dataKey="opens" stroke="hsl(var(--chart-1))" fill="hsl(var(--chart-1))" fillOpacity={0.6} />
+          <Radar name="Opens" dataKey="opens" stroke="hsl(var(--chart-1))" fill="hsl(var(--chart-1))" fillOpacity={0.6} animationBegin={400} animationDuration={1500} />
           <Tooltip
             cursor={{ fill: 'hsl(var(--secondary))' }}
             contentStyle={{
@@ -281,5 +281,3 @@ export function ActivityDoughnutChart({ activities, isLoading }: ActivityChartPr
     </div>
   );
 }
-
-    

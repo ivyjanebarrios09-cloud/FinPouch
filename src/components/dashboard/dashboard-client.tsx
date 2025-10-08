@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ActivityByHourChart, ActivityDoughnutChart } from "./charts";
+import { ActivityByHourChart, ActivityDoughnutChart, ActivityByDayChart, ActivityByMonthChart } from "./charts";
 import { AiAdvice } from "./ai-advice";
 import { subDays, startOfToday, isToday, format } from "date-fns";
 import { parseCustomTimestamp } from "@/lib/utils";
@@ -279,7 +279,7 @@ export function DashboardClient() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
+        <Card className="col-span-full lg:col-span-4">
           <CardHeader>
             <CardTitle>Wallet Opens by Hour</CardTitle>
             <CardDescription>
@@ -291,7 +291,7 @@ export function DashboardClient() {
           </CardContent>
         </Card>
 
-        <div className="col-span-4 md:col-span-3 space-y-4">
+        <div className="col-span-full lg:col-span-3 space-y-4">
           <AiAdvice walletOpens={totalOpens} />
 
           <Card>
@@ -309,6 +309,31 @@ export function DashboardClient() {
             </CardContent>
           </Card>
         </div>
+        
+        <Card className="col-span-full lg:col-span-4">
+          <CardHeader>
+            <CardTitle>Last 7 Days Activity</CardTitle>
+            <CardDescription>
+              Your wallet opens over the past week.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pl-2">
+            <ActivityByDayChart activities={activities} isLoading={loading} />
+          </CardContent>
+        </Card>
+        
+        <Card className="col-span-full lg:col-span-3">
+          <CardHeader>
+            <CardTitle>Last 12 Months Activity</CardTitle>
+            <CardDescription>
+              Your wallet opens over the past year.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pl-2">
+            <ActivityByMonthChart activities={activities} isLoading={loading} />
+          </CardContent>
+        </Card>
+
       </div>
     </>
   );
