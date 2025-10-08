@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
 import { collection, query, onSnapshot, Unsubscribe } from "firebase/firestore";
@@ -12,9 +12,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui
 import { parseCustomTimestamp } from "@/lib/utils";
 import { ScrollArea } from "../ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { Unlock, ShoppingCart, DollarSign, Edit } from "lucide-react";
+import { Unlock, Edit } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "../ui/badge";
+import { Separator } from "../ui/separator";
 
 export function RecordsClient() {
   const { user } = useAuth();
@@ -30,7 +31,6 @@ export function RecordsClient() {
 
     setLoading(true);
 
-    // Listen for spending records
     const spendingRecordsQuery = query(collection(db, "users", user.uid, "spendingRecords"));
     const unsubscribeSpendingRecords = onSnapshot(spendingRecordsQuery, (spendingSnapshot) => {
         const spendingRecordsData: { [activityId: string]: SpendingRecord } = {};
@@ -64,13 +64,11 @@ export function RecordsClient() {
                     deviceName: device.name,
                 } as WalletActivity));
 
-                // Replace old activities for this device with the new ones
                 allActivities = [
                     ...allActivities.filter(act => act.deviceId !== device.id),
                     ...deviceActivities
                 ];
 
-                // Sort all activities together after any update
                 allActivities.sort((a, b) => {
                     const dateA = a.timestamp ? parseCustomTimestamp(a.timestamp)?.getTime() : 0;
                     const dateB = b.timestamp ? parseCustomTimestamp(b.timestamp)?.getTime() : 0;
@@ -94,6 +92,20 @@ export function RecordsClient() {
     };
   }, [user]);
   
+  const groupedActivities = useMemo(() => {
+    return activities.reduce((acc, activity) => {
+      const date = activity.timestamp ? parseCustomTimestamp(activity.timestamp) : null;
+      if (date) {
+        const dayKey = format(date, "yyyy-MM-dd");
+        if (!acc[dayKey]) {
+          acc[dayKey] = [];
+        }
+        acc[dayKey].push(activity);
+      }
+      return acc;
+    }, {} as Record<string, WalletActivity[]>);
+  }, [activities]);
+
   const isValidDate = (timestamp: any) => {
     if (!timestamp) return false;
     const date = parseCustomTimestamp(timestamp);
@@ -154,10 +166,18 @@ export function RecordsClient() {
             <ScrollArea className="h-full px-6 py-4">
                 {loading ? renderLoadingState() : (
                     activities.length > 0 ? (
-                        <div className="relative pl-6">
-                             <div className="absolute left-[30px] top-0 h-full w-0.5 bg-gradient-to-b from-primary/50 via-primary to-primary/50 animate-[glow_4s_ease-in-out_infinite] -translate-x-1/2"></div>
-                            <ul className="space-y-8">
-                                {activities.map((activity, index) => {
+                      <div className="relative pl-6">
+                        <div className="absolute left-[30px] top-0 h-full w-0.5 bg-gradient-to-b from-primary/50 via-primary to-primary/50 -translate-x-1/2"></div>
+                          {Object.entries(groupedActivities).map(([day, dayActivities], dayIndex) => (
+                            <div key={day} className="mb-8">
+                              <div className="flex items-center mb-4">
+                                <div className="z-10 bg-background pr-4 font-semibold text-foreground">
+                                  {format(parseCustomTimestamp(dayActivities[0].timestamp)!, "MMMM d, yyyy")}
+                                </div>
+                                <Separator className="flex-1" />
+                              </div>
+                              <ul className="space-y-8">
+                                {dayActivities.map((activity) => {
                                     const date = isValidDate(activity.timestamp) ? parseCustomTimestamp(activity.timestamp) : null;
                                     return (
                                         <li key={activity.id} className="relative flex items-start gap-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-700">
@@ -168,7 +188,7 @@ export function RecordsClient() {
                                                 <p className="font-semibold text-foreground group-hover:text-primary transition-colors">Wallet Opened</p>
                                                 <p className="text-sm text-muted-foreground">{activity.deviceName || activity.deviceId || 'Unknown Device'}</p>
                                                 <time className="text-xs text-muted-foreground/80 group-hover:text-primary transition-colors">
-                                                    {date ? `${format(date, "MMM d, yyyy")} at ${format(date, "h:mm a")}` : "N/A"}
+                                                    {date ? format(date, "h:mm a") : "N/A"}
                                                 </time>
                                                 <div className="mt-2">
                                                     {getRecordDisplay(activity)}
@@ -177,7 +197,9 @@ export function RecordsClient() {
                                         </li>
                                     );
                                 })}
-                            </ul>
+                              </ul>
+                            </div>
+                          ))}
                         </div>
                     ) : (
                         <div className="flex h-full items-center justify-center text-muted-foreground">
@@ -190,4 +212,3 @@ export function RecordsClient() {
     </Card>
   );
 }
-
