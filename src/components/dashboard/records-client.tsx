@@ -6,22 +6,31 @@ import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
 import { collection, query, onSnapshot, Unsubscribe } from "firebase/firestore";
 import type { WalletActivity, Device, SpendingRecord } from "@/lib/types";
-import { format } from "date-fns";
+import { addDays, format } from "date-fns";
 import { Skeleton } from "../ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { parseCustomTimestamp } from "@/lib/utils";
 import { ScrollArea } from "../ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { Unlock, Edit } from "lucide-react";
+import { Unlock, Edit, Calendar as CalendarIcon } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
+import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { DateRange } from "react-day-picker"
 
 export function RecordsClient() {
   const { user } = useAuth();
   const [activities, setActivities] = useState<WalletActivity[]>([]);
   const [spendingRecords, setSpendingRecords] = useState<{[activityId: string]: SpendingRecord}>({});
   const [loading, setLoading] = useState(true);
+  const [date, setDate] = React.useState<DateRange | undefined>(undefined);
 
   useEffect(() => {
     if (!user) {
@@ -91,9 +100,23 @@ export function RecordsClient() {
         unsubscribeSpendingRecords();
     };
   }, [user]);
+
+  const filteredActivities = useMemo(() => {
+    if (!date?.from) {
+      return activities;
+    }
+    const fromDate = date.from;
+    const toDate = date.to ? date.to : fromDate;
+
+    return activities.filter(activity => {
+      const activityDate = parseCustomTimestamp(activity.timestamp);
+      if (!activityDate) return false;
+      return activityDate >= fromDate && activityDate <= addDays(toDate, 1);
+    });
+  }, [activities, date]);
   
   const groupedActivities = useMemo(() => {
-    return activities.reduce((acc, activity) => {
+    return filteredActivities.reduce((acc, activity) => {
       const date = activity.timestamp ? parseCustomTimestamp(activity.timestamp) : null;
       if (date) {
         const dayKey = format(date, "yyyy-MM-dd");
@@ -104,7 +127,7 @@ export function RecordsClient() {
       }
       return acc;
     }, {} as Record<string, WalletActivity[]>);
-  }, [activities]);
+  }, [filteredActivities]);
 
   const isValidDate = (timestamp: any) => {
     if (!timestamp) return false;
@@ -160,12 +183,54 @@ export function RecordsClient() {
     <Card className="h-[500px] flex flex-col">
         <CardHeader>
             <CardTitle>TimeTrace</CardTitle>
-            <CardDescription>A timeline of your recent wallet activity.</CardDescription>
+            <CardDescription>
+                A timeline of your recent wallet activity. 
+                Filter by date range to narrow your results.
+            </CardDescription>
+             <div className="flex items-center gap-2 pt-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="date"
+                      variant={"outline"}
+                      className={cn(
+                        "w-[300px] justify-start text-left font-normal",
+                        !date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {date?.from ? (
+                        date.to ? (
+                          <>
+                            {format(date.from, "LLL dd, y")} -{" "}
+                            {format(date.to, "LLL dd, y")}
+                          </>
+                        ) : (
+                          format(date.from, "LLL dd, y")
+                        )
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      initialFocus
+                      mode="range"
+                      defaultMonth={date?.from}
+                      selected={date}
+                      onSelect={setDate}
+                      numberOfMonths={2}
+                    />
+                  </PopoverContent>
+                </Popover>
+                {date && <Button variant="ghost" onClick={() => setDate(undefined)}>Clear</Button>}
+            </div>
         </CardHeader>
         <CardContent className="flex-1 p-0">
             <ScrollArea className="h-full px-6 py-4">
                 {loading ? renderLoadingState() : (
-                    activities.length > 0 ? (
+                    Object.keys(groupedActivities).length > 0 ? (
                       <div className="relative pl-6">
                         <div className="absolute left-[30px] top-0 h-full w-0.5 bg-gradient-to-b from-primary/50 via-primary to-primary/50 -translate-x-1/2"></div>
                           {Object.entries(groupedActivities).map(([day, dayActivities], dayIndex) => (
@@ -203,7 +268,7 @@ export function RecordsClient() {
                         </div>
                     ) : (
                         <div className="flex h-full items-center justify-center text-muted-foreground">
-                            No records found.
+                            No records found for the selected date range.
                         </div>
                     )
                 )}
