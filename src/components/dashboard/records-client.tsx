@@ -1,6 +1,7 @@
 
 "use client";
 
+import * as React from "react";
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
@@ -30,7 +31,7 @@ export function RecordsClient() {
   const [activities, setActivities] = useState<WalletActivity[]>([]);
   const [spendingRecords, setSpendingRecords] = useState<{[activityId: string]: SpendingRecord}>({});
   const [loading, setLoading] = useState(true);
-  const [date, setDate] = React.useState<DateRange | undefined>(undefined);
+  const [date, setDate] = useState<DateRange | undefined>(undefined);
 
   useEffect(() => {
     if (!user) {
