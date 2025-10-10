@@ -7,23 +7,23 @@ import { Lightbulb } from "lucide-react";
 import { Skeleton } from "../ui/skeleton";
 
 interface AiAdviceProps {
-  walletOpens: number;
+  walletOpensToday: number;
 }
 
-export function AiAdvice({ walletOpens }: AiAdviceProps) {
+export function AiAdvice({ walletOpensToday }: AiAdviceProps) {
   const [advice, setAdvice] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     async function getAdvice() {
-      if (walletOpens === 0) {
+      if (walletOpensToday === 0) {
         setAdvice("Start by recording your first wallet open to get personalized advice!");
         return;
       }
       setLoading(true);
       try {
         const result = await generateSpendingAdvice({
-          walletOpens,
+          walletOpens: walletOpensToday,
         });
         setAdvice(result.advice);
       } catch (error) {
@@ -35,7 +35,7 @@ export function AiAdvice({ walletOpens }: AiAdviceProps) {
     }
 
     getAdvice();
-  }, [walletOpens]);
+  }, [walletOpensToday]);
 
   return (
     <Card>
@@ -46,7 +46,7 @@ export function AiAdvice({ walletOpens }: AiAdviceProps) {
         <div className="flex-1">
             <CardTitle>AI-Powered Insight</CardTitle>
             <CardDescription>
-                Personalized advice based on your recent activity.
+                Personalized advice based on your activity today.
             </CardDescription>
         </div>
       </CardHeader>

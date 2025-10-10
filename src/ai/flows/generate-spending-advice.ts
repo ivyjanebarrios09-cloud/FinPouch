@@ -15,7 +15,7 @@ import {z} from 'genkit';
 const GenerateSpendingAdviceInputSchema = z.object({
   walletOpens: z
     .number()
-    .describe('The number of times the user opened their wallet.'),
+    .describe('The number of times the user opened their wallet today.'),
 });
 export type GenerateSpendingAdviceInput = z.infer<
   typeof GenerateSpendingAdviceInputSchema
@@ -38,9 +38,9 @@ const prompt = ai.definePrompt({
   name: 'generateSpendingAdvicePrompt',
   input: {schema: GenerateSpendingAdviceInputSchema},
   output: {schema: GenerateSpendingAdviceOutputSchema},
-  prompt: `Based on your recent wallet activity, here is some personalized spending advice:
+  prompt: `Based on your wallet activity today, here is some personalized spending advice:
 
-You opened your wallet {{walletOpens}} times.
+You opened your wallet {{walletOpens}} times today.
 
 Here's a tip to build spending awareness:
 `,

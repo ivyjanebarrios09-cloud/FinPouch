@@ -292,7 +292,7 @@ export function DashboardClient() {
         </Card>
 
         <div className="col-span-full lg:col-span-3 space-y-4">
-          <AiAdvice walletOpens={totalOpens} />
+          <AiAdvice walletOpensToday={opensToday} />
 
           <Card>
             <CardHeader>
